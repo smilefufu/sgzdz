@@ -18,6 +18,10 @@ headers = {
 def make_imei():
     return "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
 
+def rchr(length):
+    d = "0123456789abcdefghijklmnopqrstuvwxyz"
+    return "".join(d[random.randint(0, len(d)-1)] for i in range(length))
+
 
 def create_account(email, imei, proxy):
     # passwd is 123456
@@ -102,7 +106,7 @@ if __name__ == "__main__":
             random.shuffle(proxies)
             host, port = proxies[0].strip().split()
             http_proxy = "http://{}:{}".format(host, port)
-            email = "nana{}@gmail.com".format(make_imei())
+            email = "{}@gmail.com".format(rchr(random.randint(7,17)))
             device_id = make_imei()
             print("creating account:", email)
             token, user_id = create_account(email, device_id, proxy=http_proxy)

@@ -246,4 +246,12 @@ def del_proxy(host):
     c.close()
     conn.close()
 
+def make_send_msg_data(msg, receiver_id, seq=3):
+    body = seq.to_bytes(2, byteorder="big")
+    body += b"\x00\x00\x00\x00\xd6\x00\x00"
+    msg_bytes = msg.encode("utf8")
+    body += len(msg_bytes).to_bytes(1, byteorder="big") + msg_bytes + b'\x00'
+    body += b"\x00\x00\x00\x00" + receiver_id.to_bytes(4, byteorder="little")
+    body += b"\x00"
+    return len(body).to_bytes(4, byteorder="big") + body
 
