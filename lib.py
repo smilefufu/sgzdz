@@ -255,3 +255,51 @@ def make_send_msg_data(msg, receiver_id, seq=3):
     body += b"\x00"
     return len(body).to_bytes(4, byteorder="big") + body
 
+def make_bad_msg_data(msg, receiver_id, seq=3):
+    body = seq.to_bytes(2, byteorder="big")
+    body += b"\x00\x00\x00\x00\xd6\x00\x00"
+    msg_bytes = msg
+    body += len(msg_bytes).to_bytes(1, byteorder="big") + msg_bytes + b'\x00'
+    body += b"\x00\x00\x00\x00" + receiver_id.to_bytes(4, byteorder="little")
+    body += b"\x00"
+    return len(body).to_bytes(4, byteorder="big") + body
+
+class Session():
+    def __init__(self, email, passwd=None):
+        self.conn = sqlite3.connect("data.db")
+        self.conn.isolation_level = None
+        c = self.conn.cursor()
+        c.execute("CREATE TABLE IF NOT EXISTS session (email varchar unique, user_id, token, session)")
+        c.close()
+
+    def get_session(self, email):
+        c = self.conn.cursor()
+        c.execute("SELECT user_id, token, session FROM session where email=?", (email, ))
+        r = c.fetchone()
+        c.close()
+        return r
+
+    def update_session(self, email, user_id, token, session):
+        c = self.conn.cursor()
+        c.execute("REPLACE INTO session VALUES (?, ?, ?, ?)", (email, user_id, token, session))
+        c.close()
+
+    def delete_session(self, email):
+        c = self.conn.cursor()
+        c.execute("delete from session WHERE email=?", (email, ))
+        c.close()
+
+def is_target(role_id):
+    if role_id in range(348110, 348120):
+        return True
+    #if role_id == 347110:
+    #    # guyuena
+    #    return True
+    conn = sqlite3.connect("data.db")
+    conn.isolation_level = None
+    c = conn.cursor()
+    c.execute("SELECT * FROM sbs WHERE role_id=?", (role_id, ))
+    if c.fetchone():
+        c.close()
+        conn.close()
+        return True

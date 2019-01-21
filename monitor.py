@@ -5,7 +5,7 @@ import socket
 import time
 import  asyncio
 
-from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player
+from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target
 
 # version = '1.4.55729'
 version = '1.4.58672'
@@ -113,11 +113,11 @@ async def read_packages():
         if names:
             print(names)
             name, level, gender, role_id = names[0]
-            if level > 25:
+            if level > 20:
                 record_player(names)
         if names and len(names) == 1:
             name, level, gender, role_id = names[0]
-            if len(name) <= 4:  # system default names are 2 or 3 length
+            if len(name) in (2, 3) or (len(name) == 4 and name.isdigit()):  # system default names are 2 or 3 length
                 now = time.time()
                 if now - pool_time >= 1:
                     # refresh pool
