@@ -137,7 +137,7 @@ async def one(email, targets, wait=0):
         except:
             import traceback
             print("wtf!!!!", traceback.format_exc())
-            await asyncio.sleep(random.randint(3,7))
+            await asyncio.sleep(random.randint(10,30))
 
 
 async def count_down(sec):

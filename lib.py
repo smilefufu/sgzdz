@@ -128,6 +128,16 @@ def get_names():
     c.close()
     return ret
 
+def get_player_info(role_id):
+    conn = sqlite3.connect("data.db")
+    conn.isolation_level = None
+    c = conn.cursor()
+    c.execute("SELECT * FROM all_players WHERE role_id=?", (role_id, ))
+    r = c.fetchone()
+    c.close()
+    return r
+    pass
+
 def record_player(players):
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None

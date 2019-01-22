@@ -4,6 +4,7 @@ import random
 import socket
 import time
 import sys
+import os
 import  asyncio
 
 from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target
@@ -103,6 +104,11 @@ async def read_packages():
 
         if head in (b'\x00\x00\x00\x0f',  b'\x00\x00\x00\x03', b'\x00\x00\x00\x07'):
             # print('other players move instruction')
+            if head == b'\x00\x00\x00\x07':
+                role_id = int.from_bytes(body[-4:], byteorder="little")
+                print(role_id, "offline")
+                shl = 'curl "localhost:7788/offline?role_id={}" 1>>/dev/null 2>>/dev/null &'.format(role_id)
+                os.popen(shell)
             continue
         print("head:", head)
         if int.from_bytes(head, byteorder='big') < 640000:
@@ -111,27 +117,31 @@ async def read_packages():
         print(readable_string)
         # names = find_names(readable_string)
         names = decode_players(body)
-        if names:
-            print(names)
-            name, level, gender, role_id = names[0]
-            if level > 20:
-                record_player(names)
+        #if names:
+        #    print(names)
+        #    name, level, gender, role_id = names[0]
+        #    if level > 20:
+        #        record_player(names)
         if names and len(names) == 1:
             name, level, gender, role_id = names[0]
-            if len(name) in (2, 3) or (len(name) == 4 and name.isdigit()):  # system default names are 2 or 3 length
-                now = time.time()
-                if now - pool_time >= 1:
-                    # refresh pool
-                    pool_time = now
-                    bn_pool = set(names)
-                else:
-                    bn_pool.add(names[0])
-        if len(bn_pool) >= 6:
-            print("=======================================================")
-            print("|          SB FOUND !!!!!!!!!!!                       |")
-            print("=======================================================")
-            print(len(bn_pool), bn_pool)
-            save_names(list(bn_pool))
+            print(names)
+            if level >= 25:
+                shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
+                os.popen(shell)
+        #    if len(name) in (2, 3) or (len(name) == 4 and name.isdigit()):  # system default names are 2 or 3 length
+        #        now = time.time()
+        #        if now - pool_time >= 1:
+        #            # refresh pool
+        #            pool_time = now
+        #            bn_pool = set(names)
+        #        else:
+        #            bn_pool.add(names[0])
+        #if len(bn_pool) >= 6:
+        #    print("=======================================================")
+        #    print("|          SB FOUND !!!!!!!!!!!                       |")
+        #    print("=======================================================")
+        #    print(len(bn_pool), bn_pool)
+        #    save_names(list(bn_pool))
 
 
 reader, writer = None, None
