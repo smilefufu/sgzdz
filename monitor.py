@@ -3,6 +3,7 @@
 import random
 import socket
 import time
+import sys
 import  asyncio
 
 from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target
@@ -10,8 +11,8 @@ from lib import user_do, login_verify, decode_readable_string, find_names, decod
 # version = '1.4.55729'
 version = '1.4.58672'
 imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-
-user_id, token = user_do('guyuena001@gmail.com', imei)
+email = sys.argv[1]
+user_id, token = user_do(email, imei)
 session = login_verify(user_id, token, version)
 
 
