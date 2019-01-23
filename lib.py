@@ -313,3 +313,20 @@ def is_target(role_id):
         c.close()
         conn.close()
         return True
+
+def body_test(body):
+    # return: dict(action=action_type, args=somedict())
+    if body.startswith(b"\x01\x007"): # guild info
+        role_id = int.from_bytes(body[3:7], byteorder="little")
+        name_length = body[9]
+        name = body[10:10+name_length].decode('utf8')
+        if body[33] == 0: # join guild ( maybe?)
+            action = "guild join"
+        elif body[36] == 1:
+            action = "guild online"
+        elif body[36] == 0:
+            action = "guild offline"
+        else:
+            action = "guild unkown"
+        return dict(action=action, args=dict(role_id=role_id, name=name))
+    pass
