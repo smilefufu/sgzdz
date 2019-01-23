@@ -29,22 +29,24 @@ async def online(request):
     role_id = int(query["role_id"])
     player = (name, level, gender, role_id)
     if level > 20:
-        record_player([player])
-        key = (int(time.time()))
-        if 2 <= len(name) <= 3 or (len(name)==4 and name.isdigit()):
-            threshold = 6
-            if key in check_pool:
-                check_pool[key].append(player)
-                if len(check_pool[key]) >= threshold:
-                    logging.info("xx players:", check_pool[key])
-                    save_names(check_pool[key])
-                if not key in check_pool:
-                    check_pool = {key: [player]}
+        if gender != "0":  # trick for guild online
+            record_player([player])
+            key = (int(time.time()))
+            if 2 <= len(name) <= 3 or (len(name)==4 and name.isdigit()):
+                threshold = 6
+                if key in check_pool:
+                    check_pool[key].append(player)
+                    if len(check_pool[key]) >= threshold:
+                        logging.info("xx players:", check_pool[key])
+                        save_names(check_pool[key])
+                    if not key in check_pool:
+                        check_pool = {key: [player]}
         if role_id not in bomb_pool and is_target(role_id):
             logging.info("start bomb: {}".format(str(player)))
             os.popen("pipenv run python bomb.py {} 1200 1>>/dev/null 2>>/dev/null &".format(role_id))
             bomb_pool.append(role_id)
     return web.Response(text="ok")
+
 
 @routes.get('/offline')
 async def offline(request):
