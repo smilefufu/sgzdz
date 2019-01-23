@@ -108,23 +108,22 @@ async def read_packages():
                 role_id = int.from_bytes(body[-4:], byteorder="little")
                 print(role_id, "offline")
                 shl = 'curl "localhost:7788/offline?role_id={}" 1>>/dev/null 2>>/dev/null &'.format(role_id)
-                os.popen(shell)
+                os.popen(shl)
             continue
-        print("head:", head)
-        if int.from_bytes(head, byteorder='big') < 640000:
-            print("body:", body)
+        # print("head:", head)
+        # if int.from_bytes(head, byteorder='big') < 640000:
+            # print("body:", body)
         readable_string = decode_readable_string(body)
-        print(readable_string)
+        # print(readable_string)
         # names = find_names(readable_string)
         names = decode_players(body)
-        #if names:
-        #    print(names)
+        if names:
+            print(names)
         #    name, level, gender, role_id = names[0]
         #    if level > 20:
         #        record_player(names)
         if names and len(names) == 1:
             name, level, gender, role_id = names[0]
-            print(names)
             if level >= 25:
                 shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
                 os.popen(shell)

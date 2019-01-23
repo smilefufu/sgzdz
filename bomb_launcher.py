@@ -11,7 +11,7 @@ from lib import record_player, save_names, is_target, get_player_info
 
 
 routes = web.RouteTableDef()
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='[%(asctime)s]: %(message)s', filename='launcher.log', level=logging.INFO)
 
 
 check_pool = dict()
@@ -31,17 +31,18 @@ async def online(request):
     if level > 20:
         record_player([player])
         key = (int(time.time()))
-        threshold = 6
-        if key in check_pool:
-            check_pool[key].append(player)
-            if len(check_pool[key]) >= threshold:
-                logging.info("xx players:", check_pool[key])
-                save_names(check_pool[key])
-            if not key in check_pool:
-                check_pool = {key: [player]}
+        if 2 <= len(name) <= 3 or (len(name)==4 and name.isdigit()):
+            threshold = 6
+            if key in check_pool:
+                check_pool[key].append(player)
+                if len(check_pool[key]) >= threshold:
+                    logging.info("xx players:", check_pool[key])
+                    save_names(check_pool[key])
+                if not key in check_pool:
+                    check_pool = {key: [player]}
         if role_id not in bomb_pool and is_target(role_id):
             logging.info("start bomb: {}".format(str(player)))
-            os.popen("pipenv run python bomb.py {} 1200 1>>bomb.log 2>>bomb.log &".format(role_id))
+            os.popen("pipenv run python bomb.py {} 1200 1>>/dev/null 2>>/dev/null &".format(role_id))
             bomb_pool.append(role_id)
     return web.Response(text="ok")
 
@@ -49,8 +50,13 @@ async def online(request):
 async def offline(request):
     role_id = request.query["role_id"]
     player = get_player_info(role_id)
-    logging.info("{} is offline".format(str(player)))
-    bomb_pool.remove(role_id)
+    if player:
+        logging.info("{} is offline".format(str(player)))
+        try:
+            bomb_pool.remove(role_id)
+            os.system('ps aux | grep bomb.py | grep %s | awk \'{print $2}\' | xargs kill -9' % role_id)
+        except:
+            pass
     return web.Response(text="ok")
 
 
