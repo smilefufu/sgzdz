@@ -116,6 +116,7 @@ async def read_packages():
             role_id = r["args"]["role_id"]
             name = r["args"]["name"]
             shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, 30, 0, role_id)
+            os.popen(shell)
             continue
         # print("head:", head)
         # if int.from_bytes(head, byteorder='big') < 640000:
