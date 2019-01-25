@@ -119,14 +119,11 @@ async def read_packages():
         names = decode_players(body)
         if names:
             print(names)
-        #    name, level, gender, role_id = names[0]
-        #    if level > 20:
-        #        record_player(names)
-        if names and len(names) == 1:
-            name, level, gender, role_id = names[0]
-            if level >= 25:
-                shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
-                os.popen(shell)
+            for n in names:
+                name, level, gender, role_id = n
+                if level >= 25:
+                    shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
+                    os.popen(shell)
         #    if len(name) in (2, 3) or (len(name) == 4 and name.isdigit()):  # system default names are 2 or 3 length
         #        now = time.time()
         #        if now - pool_time >= 1:

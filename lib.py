@@ -302,6 +302,9 @@ class Session():
 def is_target(role_id):
     if role_id in range(348110, 348120):
         return True
+    if role_id in [354974,354978,354976,354971,355105,354972,354977,354975,354979,354973]:
+        # temp use
+        return True
     #if role_id == 347110:
     #    # guyuena
     #    return True
@@ -313,6 +316,15 @@ def is_target(role_id):
         c.close()
         conn.close()
         return True
+    c.execute("SELECT name FROM all_players where role_id=?", (role_id, ))
+    r = c.fetchone()
+    if r and r[0].isdigit() and int(r[0]) > 2000:
+        c.close()
+        conn.close()
+        return True
+    c.close()
+    conn.close()
+    return False
 
 def body_test(body):
     # return: dict(action=action_type, args=somedict())

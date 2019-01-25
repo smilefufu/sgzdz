@@ -12,7 +12,7 @@ from lib import user_do, login_verify, decode_readable_string, find_names, decod
 version = '1.4.55729'
 # version = '1.4.58672'
 imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-email = "fufu6@meirishentie.com"
+email = "fufu6@meirishentie.com" if len(sys.argv) == 1 else sys.argv[1]
 user_id, token = user_do(email, imei, passwd="+KB9SfNXlNQ=")
 session = login_verify(user_id, token, version)
 
@@ -74,6 +74,7 @@ async def send_heart_beat():
 
 async def read_packages():
     global reader
+    global user_pool
     while not reader:
         print("wait reader")
         await asyncio.sleep(1)
@@ -115,8 +116,9 @@ async def read_packages():
             print(r)
             role_id = r["args"]["role_id"]
             name = r["args"]["name"]
-            shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, 30, 0, role_id)
-            os.popen(shell)
+            user_pool.add((name, 30, '0', role_id))
+            #shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, 30, 0, role_id)
+            #os.popen(shell)
             continue
         # print("head:", head)
         # if int.from_bytes(head, byteorder='big') < 640000:
@@ -133,22 +135,9 @@ async def read_packages():
         if names and len(names) == 1:
             name, level, gender, role_id = names[0]
             if level >= 25:
-                shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
-                os.popen(shell)
-        #    if len(name) in (2, 3) or (len(name) == 4 and name.isdigit()):  # system default names are 2 or 3 length
-        #        now = time.time()
-        #        if now - pool_time >= 1:
-        #            # refresh pool
-        #            pool_time = now
-        #            bn_pool = set(names)
-        #        else:
-        #            bn_pool.add(names[0])
-        #if len(bn_pool) >= 6:
-        #    print("=======================================================")
-        #    print("|          SB FOUND !!!!!!!!!!!                       |")
-        #    print("=======================================================")
-        #    print(len(bn_pool), bn_pool)
-        #    save_names(list(bn_pool))
+                user_pool.add((name, level, gender, role_id))
+                #shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
+                #os.popen(shell)
 
 
 reader, writer = None, None
@@ -158,6 +147,19 @@ async def init_connection():
     global writer
     reader, writer = await asyncio.open_connection('128.14.230.246', 30000)
     writer.write(make_logon_data())
+
+user_pool = set()
+async def send_routin():
+    global user_pool
+    while True:
+        await asyncio.sleep(1)
+        while True:
+            try:
+                name, level, gender, role_id = user_pool.pop()
+                shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
+                os.popen(shell)
+            except:
+                break
 
 
 if __name__ == "__main__":
@@ -170,6 +172,7 @@ if __name__ == "__main__":
         init_connection(),
         read_packages(),
         send_heart_beat(),
+        send_routin()
     ))
     loop.close()
 
