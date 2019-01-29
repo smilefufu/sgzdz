@@ -87,7 +87,7 @@ def user_do(username,imei, passwd='V0\/wJekk6Kk=', proxy=None):
     print(r)
     return r['uid'], r['token']
 
-def login_verify(user_id, token, version='1.4.58672', proxy=None):
+def login_verify(user_id, token, version='1.5.60090', proxy=None):
     # return tcp session
     url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
     if proxy:

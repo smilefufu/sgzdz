@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
 import json
 import random
 import socket
@@ -91,7 +92,7 @@ def make_logon_data(version, user_id, imei, session):
     return logon_data
 
 if __name__ == "__main__":
-    version = '1.4.58672'
+    version = '1.5.60090'
     socket.socket = socks.socksocket
     HOST = '128.14.230.246'
     PORT = 30000
@@ -127,6 +128,7 @@ if __name__ == "__main__":
                 role_id, name = create_role(s)
                 print("role_id:", role_id, "name:", name)
                 c.execute("INSERT INTO guards VALUES (?, ?, ?)", (email, name, role_id))
+            time.sleep(5)
         except:
             import traceback
             print("ERROR HAPPENS:\n", traceback.format_exc())
