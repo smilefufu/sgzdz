@@ -128,6 +128,7 @@ if __name__ == "__main__":
                 role_id, name = create_role(s)
                 print("role_id:", role_id, "name:", name)
                 c.execute("INSERT INTO guards VALUES (?, ?, ?)", (email, name, role_id))
+                s.send(b"\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03")
             time.sleep(5)
         except:
             import traceback

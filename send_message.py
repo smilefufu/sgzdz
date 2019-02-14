@@ -99,6 +99,10 @@ async def one(email):
             receiver = 358864
             while True:
                 writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
                 # read packages and do nothing
                 head = await reader.read(4)
                 body_len = int.from_bytes(head, byteorder="big")
@@ -126,6 +130,8 @@ if __name__ == "__main__":
     c = conn.cursor()
     c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 1")
     for row in c.fetchall():
-        guards.append(one(row[0]))
+        email = row[0]
+        print(email)
+        guards.append(one(email))
     loop.run_until_complete(asyncio.gather(*guards))
     loop.close()
