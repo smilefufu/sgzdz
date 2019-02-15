@@ -9,9 +9,14 @@ import traceback
 
 import requests
 
+from const import CARD_CODE
+
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 8.0.0; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
 }
+
+def baseN(num, b):
+	return ((num == 0) and "0") or (baseN(num // b, b).lstrip("0") + "0123456789abcdefghijklmnopqrstuvwxyz"[num % b])
 
 def decode_readable_string(data):
     # data is byte array
@@ -87,9 +92,9 @@ def user_do(username,imei, passwd='V0\/wJekk6Kk=', proxy=None):
     print(r)
     return r['uid'], r['token']
 
-def login_verify(user_id, token, version='1.5.60090', proxy=None):
+def login_verify(user_id, token, version='1.5.60090', proxy=None, server_id=20):
     # return tcp session
-    url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
+    url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=%s&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, server_id, user_id, token)
     if proxy:
         proxies = dict(http=proxy, https=proxy)
         r = requests.get(url, headers=headers, proxies=proxies, timeout=5).json()
@@ -181,7 +186,6 @@ def create_role(s, role_name=None):
             print("name", name.decode('utf8'), "has been taken")
             continue
         else:
-            print(ret)
             try:
                 role_id = int.from_bytes(ret[7:11], byteorder='little')
                 role_name = ret[14:ret[13]+14].decode('utf8')
@@ -205,6 +209,43 @@ def make_logon_data(version, user_id, imei, session):
     package_data += bytes(session, 'utf8')
     logon_data = len(package_data).to_bytes(4, byteorder='big') + package_data
     return logon_data
+
+def make_login_server_data(version, user_id, server_id, imei, session, os=None, phone=None):
+    _os = bytes(os or 'Android OS 9.0.1 / API-28 (V417IR/eng)', 'utf8')
+    _phone = bytes(phone or 'HuaweiMate21', 'utf8')
+    _user_id = bytes(user_id, 'utf8')
+    _imei = bytes(imei, 'utf8')
+    _session = bytes(session, 'utf8')
+
+    data = b'\x09'
+    data += bytes(version, 'utf8')
+    data += server_id.to_bytes(1, byteorder='big')
+    data += b'\x00\x04'
+
+    channel = bytes('a8_card', 'utf8')
+    data += len(channel).to_bytes(2, byteorder='big')
+    data += channel
+
+    data += len(_user_id).to_bytes(2, byteorder='big')
+    data += _user_id
+
+    data += len(_imei).to_bytes(1, byteorder='big')
+    data += _imei
+
+    data += len(_os).to_bytes(1, byteorder='big')
+    data += _os
+
+    data += len(_phone).to_bytes(1, byteorder='big')
+    data += _phone
+
+    data += b'@'
+
+    data += len(_session).to_bytes(1, byteorder='big')
+    data += _session
+    ret =  len(data).to_bytes(4, byteorder='big') + data
+    print(ret)
+    return ret
+
 
 def validate_proxy(host, port):
     import socks
@@ -328,7 +369,7 @@ def is_target(role_id):
 
 def body_test(body):
     # return: dict(action=action_type, args=somedict())
-    if body.startswith(b"\x01\x007"): # guild info
+    if body.startswith(b"\x01\x007"): # guild info  \x01\x00\x37
         role_id = int.from_bytes(body[3:7], byteorder="little")
         name_length = body[9]
         name = body[10:10+name_length].decode('utf8')
@@ -341,10 +382,14 @@ def body_test(body):
         else:
             action = "guild unkown"
         return dict(action=action, args=dict(role_id=role_id, name=name))
+    if body.startswith(b'\x01\x00\x28') or body.startswith(b'\x01\x00\x27'):
+        # get a card
+        card_id = body[3:11]
+        card_code = body[11:15]
+        return dict(action='get_card', args=dict(card=(card_code, card_id)))
     pass
 
 def make_data(data_type):
-    print("do:", data_type)
     if data_type == "zumao":
         # 1. get zumao
         # 00 00 00 07 00 04 00 00 00 00 03
@@ -358,8 +403,85 @@ def make_data(data_type):
         # 00 00 00 07 00 08 00 00 00 00 05 00 00 00 07 00 09 00 00 00 00 07
         return b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x09\x00\x00\x00\x00\x07"
 
-    if data_type == "first_battle_start":
-        return b"\x00\x00\x00\x85\x00\x04\x00\x00\x00\x00\x09\x01\x01\x00\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x36\x9c\x4b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x9a\x4b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    if data_type == "tongmenxiangju":
+        # 5. tongmenxiangju
+        # 00 00 00 07 00 07 00 00 00 00 03
+        pass
     if data_type == "first_battle_end":
         return b"\x00\x00\x00\x2f\x00\x05\x00\x00\x00\x00\x0a\x01\x00\x03\xae\x00\x01\x63\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
+
+def make_story_data(index):
+    battle_index = [2, 4, 10]
+    return b"\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x06" if index in battle_index else b"\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03"
+
+
+def find_cards(data):
+    cards = set()
+    if b"sysMail_addressor_BlackWings" in data:
+        # start  searching
+        for card, code in CARD_CODE.items():
+            idx = data.find(code)
+            if idx > 8:
+                card_id = data[idx-8:idx]
+                cards.add((card, card_id))
+    return cards
+
+
+def init_data(data):
+    # head is not included, only body
+    # data[:12]  unknown
+    # data[12:16] == data[16:20] role_id, repeat twice
+    # data[20:22] == b'\x14\x00' fixed bytes
+    # data[22] name length
+    # data[23:23+data[22]] name
+    # data[data[22]+23] model_id
+    # data[data[22]+24:data[22]+28] ==  b'\x01\x00\xc8\x09'  fixed bytes
+    # data[data[22]+28:data[22]+54] == b'\x00...  26 bytes 00
+    # data[data[22]+54] == b'\x01'    data[data[22]+55] story_index
+    ret = dict()
+    ret['role_id'] = int.from_bytes(data[12:16], byteorder="little")
+    name_length = data[22]
+    name_length
+    if name_length:
+        ret['name'] = data[23:23+name_length].decode('utf8')
+    ret['model_id'] = data[name_length+23]
+    ret['story_index'] = (data[name_length+54], data[name_length+55])
+    ret['cards'] = find_cards(data)
+    return ret
+
+def get_formation(cards, episode=None):
+    formation = [b'\x00'*8] * 15
+    if episode == '1-0':
+        cardmap = dict(cards)
+        formation[2] = cardmap['zumao']
+        formation[8] = cardmap['xiaoqiao']
+    else:
+        for idx, card in enumerate(cards):
+            if idx > 15:
+                break
+            formation[idx] = card[1]
+    return b"".join(formation)
+
+
+def make_battle_data(cards, episode):
+    ep = list(map(int, episode.split("-")))
+    help_episode = ['1-3']
+    data = b'\x00\x00\x00\x85\x00\x04'
+    data += b'\x00\x00\x00\x00\x09'
+    data += ep[0].to_bytes(1, byteorder='big')
+    data += ep[1].to_bytes(1, byteorder='big')
+    data += b'\x00\x00\x0f'
+    data += get_formation(cards, episode)
+    data += b'\x00' if episode not in help_episode else b'\x01'
+    return data
+
+def gen_name(seed=None):
+    name_pool = '幸段謝羊彬穆品狄琴芬丁墨鑫先耀嵇計岑昝樺熹忠賀才躍杜彪彭黃孟支良道房賓隗高博蔣吾石洋婁謙山婷龐談顏鋼慈明貝文超蔔尤愛紹伯全硯雅清昊翁楠袁戴壇元皓浩敏霖戎乾沙裘春柳雄應卞輝崗俊洪濱張苗雷龍顧凱魏危樊郎琰翰妍江中若葉繆吉合樂花祖何松傳邦糜慧迎梓邱執冉梁畢夏宣隆鵬思彰趙純止伶宋萬蘇洲竇莉涯毛坤鋒旭光竣巫璿曲義埃阮暉傑寧漩喻紫新晗雲非亞谷嫣範淦富雪午逸勝甄和童康也時辰鄒學翊翔卓之湛珂任川葛韶郝宇徐暴晨詹西琦宸董容濤燕伊啟烏磊許曆影陶勃宵蔡瑋皮米興貴費豪車健餘呂閃成弓枚薛晏芮芪汪常行季剛繼恬路祈單宝賁利錢荔彎群馮鄭強仇曉銳維熊瑞王凡訪伏殊紅疏世韋珺力捷戚胡紀河志諾生嵐賈蕭涔陳滑鈄駱蓬玉鐘馬劉項基珈與炎尹智靳境滕民朱稚筱昌靜衛伍向賽章解書諸姚仙陽唐姜秋豔子祁汲仰孔儲然盧久懿孫牧金田言培嶽多天煒舒霍羲大俞英奕君樹銘勇國曼軒鬱根刁卿潘酆湯郭虞錦臧禹偉建禮景盛嚴曹宮梅本龔茅倪籽峻羅莫宓壹森鳳威連廉奚安仲施藝鋮欒煜柏邢茂侯鄧淼傅褚雁席珮榮閔耶齊楊騰程絢惠林吳殷方泰竹海淵華堅裴呈希乙麻秦家遠班孜平符水祥粟焦聆鈞昕韓儀左藍振杭斌祝琅宏藤顯邴飛臻士昆夜'
+    name_pool = list(name_pool)
+    random.shuffle(name_pool)
+    name = "".join(name_pool[:3])
+    if seed:
+        sd = int.from_bytes(str(seed).encode('utf8'), byteorder="little")
+        name += baseN(sd, 36)[:4]
+    return name
