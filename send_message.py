@@ -96,8 +96,13 @@ async def one(email):
             #writer.write(make_bad_msg_data(b'a'*255, 352131, 3))
             #writer.write(make_send_msg_data('\ufdf0\ufdd0\ufd90\ufd86', 352131, 3))
             #print("sent!")
-            receiver = 353956
+            receiver = 358864
             while True:
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
+                writer.write(make_send_msg_data('巴巴拉小魔仙!', receiver, 3))
                 # read packages and do nothing
                 head = await reader.read(4)
                 body_len = int.from_bytes(head, byteorder="big")
@@ -105,16 +110,7 @@ async def one(email):
                 while len(body) < body_len:
                     body += await reader.read(body_len - len(body))
                 print("get body len", body_len, ":", body)
-                writer.write(make_bad_msg_data(b'a'*60, receiver, 3))
-                await asyncio.sleep(1)
-                writer.write(make_bad_msg_data(b'a'*60, receiver, 3))
-                await asyncio.sleep(1)
-                writer.write(make_bad_msg_data(b'a'*60, receiver, 3))
-                await asyncio.sleep(1)
-                writer.write(make_bad_msg_data(b'a'*60, receiver, 3))
-                await asyncio.sleep(1)
-                writer.write(make_bad_msg_data(b'a'*60, receiver, 3))
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
                 rd = lambda : random.randint(0,255).to_bytes(1, byteorder='big')
                 # writer.write(b"\x00\x00\x00\x0e\x01\x01\xf0\x7b\x05" + rd() + rd() + rd() + rd() + rd() + rd() + rd() + rd() + b"\x42")
                 writer.write(b'\x00\x00\x00\x02\x01\x00')  # heartbeat?
@@ -132,8 +128,10 @@ if __name__ == "__main__":
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
-    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 12")
+    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 1")
     for row in c.fetchall():
-        guards.append(one(row[0]))
+        email = row[0]
+        print(email)
+        guards.append(one(email))
     loop.run_until_complete(asyncio.gather(*guards))
     loop.close()

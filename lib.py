@@ -299,18 +299,18 @@ def del_proxy(host):
 
 def make_send_msg_data(msg, receiver_id, seq=3):
     body = seq.to_bytes(2, byteorder="big")
-    body += b"\x00\x00\x00\x00\xd6\x00\x00"
+    body += b"\x00\x00\x00\x00\xdd\x00"
     msg_bytes = msg.encode("utf8")
-    body += len(msg_bytes).to_bytes(1, byteorder="big") + msg_bytes + b'\x00'
+    body += len(msg_bytes).to_bytes(2, byteorder="big") + msg_bytes + b'\x00'
     body += b"\x00\x00\x00\x00" + receiver_id.to_bytes(4, byteorder="little")
     body += b"\x00"
     return len(body).to_bytes(4, byteorder="big") + body
 
 def make_bad_msg_data(msg, receiver_id, seq=3):
     body = seq.to_bytes(2, byteorder="big")
-    body += b"\x00\x00\x00\x00\xd6\x00\x00"
+    body += b"\x00\x00\x00\x00\xdd\x00"
     msg_bytes = msg
-    body += len(msg_bytes).to_bytes(1, byteorder="big") + msg_bytes + b'\x00'
+    body += len(msg_bytes).to_bytes(2, byteorder="big") + msg_bytes + b'\x00'
     body += b"\x00\x00\x00\x00" + receiver_id.to_bytes(4, byteorder="little")
     body += b"\x00"
     return len(body).to_bytes(4, byteorder="big") + body
@@ -346,9 +346,9 @@ def is_target(role_id):
     if role_id in [354974,354978,354976,354971,355105,354972,354977,354975,354979,354973]:
         # temp use
         return True
-    #if role_id == 347110:
-    #    # guyuena
-    #    return True
+    if role_id == 347110:
+        # guyuena
+        return True
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None
     c = conn.cursor()
@@ -359,7 +359,7 @@ def is_target(role_id):
         return True
     c.execute("SELECT name FROM all_players where role_id=?", (role_id, ))
     r = c.fetchone()
-    if r and r[0].isdigit() and int(r[0]) > 2000:
+    if r and r[0].isdigit() and int(r[0]) < 3000:
         c.close()
         conn.close()
         return True

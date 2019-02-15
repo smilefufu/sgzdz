@@ -103,7 +103,7 @@ async def read_packages():
 
         if head in (b'\x00\x00\x00\x0f',  b'\x00\x00\x00\x03', b'\x00\x00\x00\x07'):
             # print('other players move instruction')
-            if head == b'\x00\x00\x00\x07':
+            if head == b'\x00\x00\x00\x07\x01\x00\x1b':
                 role_id = int.from_bytes(body[-4:], byteorder="little")
                 print(role_id, "offline")
                 shl = 'curl "localhost:7788/offline?role_id={}" 1>>/dev/null 2>>/dev/null &'.format(role_id)

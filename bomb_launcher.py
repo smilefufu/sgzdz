@@ -44,7 +44,7 @@ async def online(request):
                         check_pool = {key: [player]}
         if "" == os.popen("ps aux|grep %s|grep -v grep|grep -v curl"%role_id).read() and is_target(role_id):
             logging.info("start bomb: {}".format(str(player)))
-            os.popen("pipenv run python bomb.py {} 600 1>>/dev/null 2>>/dev/null &".format(role_id))
+            os.popen("pipenv run python bomb.py {} 1800 1>>/dev/null 2>>/dev/null &".format(role_id))
             bomb_pool.append(role_id)
     return web.Response(text="ok")
 
