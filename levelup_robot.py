@@ -5,11 +5,14 @@ import random
 import socket
 import sys
 import time
+import datetime
+import argparse
+import sqlite3
 from functools import reduce
 
 import requests
 
-from lib import login_verify, create_role, make_data, find_cards, get_formation, body_test, make_battle_data, init_data, gen_name, make_story_data, make_login_server_data
+from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, init_data, gen_name, make_login_server_data, make_quick_battle_data
 from const import EPISODES
 
 headers = {
@@ -109,11 +112,6 @@ def read_all(s):
             body = read_bytes(s, int.from_bytes(head, byteorder="big"))
             if not body:
                 break
-            #cards = find_cards(body)
-            #if cards:
-            #    print("CARDS:", CARDS)
-            #    print("cards:", cards)
-            #    CARDS.update(cards)
         except socket.timeout:
             s.settimeout(None)
             print("all data received!")
@@ -141,99 +139,75 @@ def do_story(s, story):
         # no battle, but card is possible
         s.send(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03')
         # try not find any card
+        return 0
     else:
         s.send(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x06')
+        times = 0
         for episode in sp[1:]:
             battle_episode(s, episode)
+            times += 1
+        return times
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("email", help="login account")
+    parser.add_argument("server_id", help="login server id", type=int)
+    args = parser.parse_args()
+    email = args.email
+    server_id = args.server_id
+    SERVER_LIST = {
+        18: (18, '128.14.230.114', 30000),
+        20: (20, '128.14.230.246', 30000),
+    }
     version = '1.5.60090'
-    # socket.socket = socks.socksocket
-    server = (20, '128.14.230.246', 30000)
-    # server = (18, '128.14.230.114', 30000)
+    server = SERVER_LIST[server_id]
     SERVERID, HOST, PORT = server
-    # with open("proxy.txt", "r") as f:
-    #     proxies = f.readlines()
-    # conn = sqlite3.connect("data.db")
-    # conn.isolation_level = None   # auto commit
-    # c = conn.cursor()
-    # c.execute("CREATE TABLE IF NOT EXISTS alts (email varchar unique, name varchar unique, role_id int)")
-    # random.shuffle(proxies)
-    # host, port = proxies[0].strip().split()
-    # http_proxy = "http://{}:{}".format(host, port)
-    email = sys.argv[1]
+    # sql connection
+    conn = sqlite3.connect("data.db")
+    conn.isolation_level = None   # auto commit
+    c = conn.cursor()
+    table_name = 'pigs_{}'.format(server_id)
+
     device_id = make_imei()
     print("login account:", email)
     token, user_id = create_account(email, device_id)
     #token, user_id = login_account(email, device_id)
     session = login_verify(user_id, token, version=version, server_id=SERVERID)
-    print("creating role")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        #s.send(make_logon_data(version, user_id, device_id, session))
         s.send(make_login_server_data(version, user_id, SERVERID, device_id, session))
         head, body = read_one(s)
         r = init_data(body)
+        if datetime.datetime.now().hour == 3:  # 3 o'clock do daily
+            sql = "UPDATE {} SET level=? WHERE email=?".format("pigs_"+str(SERVERID))
+            c.execute(sql, (r['level'], email))
         cards = r['cards']
         if cards:
             CARDS.update(cards)
-            CARDS
         print('init:', r)
         if not "name" in r:
             # need create role
-            print(r)
             role_id, name = create_role(s, gen_name(seed=r["role_id"]))
-            print(role_id, name)
+            print('created role:', role_id, name)
         read_all(s)
         chapter, section = r['story_index']
         left_chapters = EPISODES[chapter-1:]
         left_story = reduce(lambda t, c: t+c, left_chapters, [])[section-1:]
+        battle_times = 0
         for story in left_story:
-            do_story(s, story)
+            battle_times += do_story(s, story)
+            if battle_times >= 20:  # 100/5 = 20 maxed battle times, stamina empty
+                break
+        if battle_times < 20:  # need shaodang
+            time_section = int(datetime.datetime.now().hour / 8)
+            chapter = time_section + 1
+            section = 1
+            print('start shao dang')
+            for i in range(20):
+                s.send(make_quick_battle_data(chapter, section))
+        # update info
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sql = "UPDATE {} SET level = ?, last_login=? WHERE email=?".format(table_name)
+        c.execute(sql, (r['level'], now, email))
         exit()
-
-        s.send(make_story_data(1))
-        while True:
-            try:
-                head, body = read_one(s)
-                print("get pack", head)
-                if head in (b'\x00\x00\x00\x85', b'\x00\x00\x00\xb1'): # and body.startswith(b'\x01\x00\x27'):
-                    body
-                    card_id = body[3:11]
-                    card_code = body[11:15]  # should be: fc 32 01 00
-                    card_code
-                    CARDS.add(('zumao', card_id))
-                    break
-            except:
-                print("SOME THING BAD HAPPEN")
-                exit()
-        s.send(make_story_data(2))
-        battle_episode(s, '1-1')
-        s.send(make_story_data(3))
-        s.send(make_story_data(4))
-        battle_episode(s, '1-2')
-        s.send(make_story_data(5))
-        s.send(make_story_data(6))
-        s.send(make_story_data(7))
-        s.send(make_story_data(8))
-        s.send(make_story_data(9))
-        s.send(make_story_data(10))
-        battle_episode(s, '1-3')
-        exit()
-
-        if r["story_index"] <= 1:
-            s.send(make_data("zumao"))
-            head, body = read_one(s)
-            print(head, body)
-            r = body_test(body)
-            print(r)
-            CARDS.add(r['args']['card'])
-
-        s.send(make_data("huangjin"))
-        read_all(s)
-        s.send(make_battle_data(CARDS, '1-1'))
-        read_all(s)
-        time.sleep(10)
-        s.send(b'\x00\x00\x00\x02\x01\x00')
-        s.send(make_data("first_battle_end"))
-        read_all(s)
