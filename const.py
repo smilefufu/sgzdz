@@ -77,6 +77,13 @@ __EPISODES = ["""
               袭击董军 4-7
               激战董卓 4-8
               文姬失散
+              """,
+              """
+              狼狈回归
+              曹操离开
+              国之重器
+              撤回江东
+              袁军追击 5-1
               """]
 
 EPISODES = list(item.strip().split("\n") for item in __EPISODES)
