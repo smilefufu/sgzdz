@@ -3,8 +3,14 @@
 
 import os
 import sqlite3
+import time
+import datetime
 import argparse
 
+
+def count_robot():
+    cnt = os.popen("ps aux | grep levelup_robot.py | grep -v grep | wc -l").read()
+    return int(cnt)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -23,8 +29,18 @@ if __name__ == "__main__":
         sql = "INSERT INTO {} (email) VALUES (?)".format(table_name)
         c.execute(sql, (args.email, ))
     elif args.op == "levelup":
-        sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-700 min', 'localtime') limit 10".format(table_name)
-        c.execute(sql)
-        for row in c.fetchall():
-            email = row[0]
-            os.popen("pipenv run python levelup_robot.py {} {} &".format(email, args.server_id))
+        while True:
+            now = datetime.datetime.now()
+            cnt = count_robot()
+            if cnt < 10:
+                # add to 10
+                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-700 min', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, 10-cnt)
+                c.execute(sql)
+                for row in c.fetchall():
+                    email = row[0]
+                    os.popen("pipenv run python levelup_robot.py {} {} &".format(email, args.server_id))
+            elif now.hour == 3:
+                # do attend, do daily
+                pass
+            else:
+                time.sleep(10)
