@@ -157,6 +157,16 @@ def record_player(players):
     c.close()
     conn.close()
 
+def make_create_role_data(role_name, model):
+    name = bytes(role_name, 'utf8')
+    body = b'\x00\x01\x00\x00\x00\x00\x01'
+    body += len(name).to_bytes(1, byteorder='big')
+    body += name
+    # role model: 01 m3, 02 w1, 03 m2, 04 w3, 05 m3, 06 w2
+    body += model
+    head = len(body).to_bytes(4, byteorder='big')
+    return head+body
+
 def create_role(s, role_name=None):
     """
     :s: the socket connection
@@ -172,18 +182,13 @@ def create_role(s, role_name=None):
         random.shuffle(models)
         random.shuffle(magic_pool)
         n = role_name or "".join(name_pool[:2]) + magic_pool[0] + "".join(name_pool[2:5])
-        name = bytes(n, 'utf8')
-        body = b'\x00\x01\x00\x00\x00\x00\x01'
-        body += len(name).to_bytes(1, byteorder='big')
-        body += name
-        # role model: 01 m3, 02 w1, 03 m2, 04 w3, 05 m3, 06 w2
-        body += models[0]
+        body = make_create_role_data(n, models[0])
         head = len(body).to_bytes(4, byteorder='big')
         s.send(head + body)
         ret = s.recv(2048)
         retry += 1
         if ret[:4] == b'\x00\x00\x00\x06':
-            print("name", name.decode('utf8'), "has been taken")
+            print("name", n.decode('utf8'), "has been taken")
             continue
         else:
             try:
