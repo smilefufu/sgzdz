@@ -182,13 +182,12 @@ def create_role(s, role_name=None):
         random.shuffle(models)
         random.shuffle(magic_pool)
         n = role_name or "".join(name_pool[:2]) + magic_pool[0] + "".join(name_pool[2:5])
-        body = make_create_role_data(n, models[0])
-        head = len(body).to_bytes(4, byteorder='big')
-        s.send(head + body)
+        data = make_create_role_data(n, models[0])
+        s.send(data)
         ret = s.recv(2048)
         retry += 1
         if ret[:4] == b'\x00\x00\x00\x06':
-            print("name", n.decode('utf8'), "has been taken")
+            print("name", n, "has been taken")
             continue
         else:
             try:
@@ -354,6 +353,9 @@ def is_target(role_id):
     if role_id == 347110:
         # guyuena
         return True
+    if role_id == 348668:
+        # yexin (@jinbi)
+        return True
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None
     c = conn.cursor()
@@ -499,7 +501,9 @@ def gen_name(seed=None):
     name_pool = list(name_pool)
     random.shuffle(name_pool)
     name = "".join(name_pool[:3])
+    if str(seed).isdigit():
+        seed = int(str(seed)) % 10000
     if seed:
         sd = int.from_bytes(str(seed).encode('utf8'), byteorder="little")
-        name += baseN(sd, 36)[:4]
+        name += baseN(sd, 36)[:5]
     return name

@@ -12,6 +12,9 @@ def count_robot():
     cnt = os.popen("ps aux | grep levelup_robot.py | grep -v grep | wc -l").read()
     return int(cnt)
 
+def log(*args):
+    print("[{}]:".format(datetime.datetime.now()), *args)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("op", help="operator instructure")
@@ -24,6 +27,8 @@ if __name__ == "__main__":
     c = conn.cursor()
     table_name = 'pigs_{}'.format(args.server_id)
 
+    MAX_ONLINE_COUNT = 10
+
     if args.op == "add":
         # sql connection
         sql = "INSERT INTO {} (email) VALUES (?)".format(table_name)
@@ -32,15 +37,16 @@ if __name__ == "__main__":
         while True:
             now = datetime.datetime.now()
             cnt = count_robot()
-            if cnt < 10:
-                # add to 10
-                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-700 min', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, 10-cnt)
+            if cnt == 0:
+                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-600 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT)
+                log(sql)
                 c.execute(sql)
-                for row in c.fetchall():
+                rows = c.fetchall()
+                if not rows:
+                    time.sleep(60)
+                for row in rows:
                     email = row[0]
-                    os.popen("pipenv run python levelup_robot.py {} {} &".format(email, args.server_id))
-            elif now.hour == 3:
-                # do attend, do daily
-                pass
+                    log("start levelup", email)
+                    os.popen("python levelup_robot.py {} {} 1>>lvl.log 2>>lvl.log &".format(email, args.server_id))
             else:
                 time.sleep(10)

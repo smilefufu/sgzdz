@@ -24,7 +24,7 @@ def rchr(length):
     return "".join(d[random.randint(0, len(d)-1)] for i in range(length))
 
 
-def create_account(email, imei, proxy):
+def create_account(email, imei, proxy=None):
     # passwd is 123456
     # create and login(2 step)
     # return token, uid
@@ -91,13 +91,34 @@ def make_logon_data(version, user_id, imei, session):
     # print(logon_data)
     return logon_data
 
+
+def read_bytes(s, length):
+    buf = b""
+    while len(buf) < length:
+        s.settimeout(2)
+        try:
+            d = s.recv(length - len(buf))
+        except socket.timeout:
+            s.settimeout(None)
+            break
+        if not d:
+            break
+        buf += d
+    return buf
+
+
+def read_one(s):
+    head = read_bytes(s, 4)
+    if not head:
+        return None
+    body = read_bytes(s, int.from_bytes(head, byteorder="big"))
+    return head, body
+
 if __name__ == "__main__":
     version = '1.5.60090'
-    socket.socket = socks.socksocket
+    #socket.socket = socks.socksocket
     HOST = '128.14.230.246'
     PORT = 30000
-    with open("proxy.txt", "r") as f:
-        proxies = f.readlines()
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
@@ -105,24 +126,19 @@ if __name__ == "__main__":
     for idx in range(1, 1000):
         try:
             random.shuffle(proxies)
-            host, port = proxies[0].strip().split()
-            http_proxy = "http://{}:{}".format(host, port)
             email = "{}@gmail.com".format(rchr(random.randint(7,17)))
             device_id = make_imei()
-            print("creating account:", email)
-            token, user_id = create_account(email, device_id, proxy=http_proxy)
-            session = login_verify(user_id, token, version=version, proxy=http_proxy)
+            token, user_id = create_account(email, device_id)
+            session = login_verify(user_id, token, version=version)
             print("creating role")
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((HOST, PORT))
                 s.send(make_logon_data(version, user_id, device_id, session))
-                s.settimeout(2)
                 while True:
                     try:
-                        data = s.recv(2048)
+                        head, body = read_one(s)
                         # print(data)
-                    except socket.timeout:
-                        s.settimeout(None)
+                    except:
                         print("all data received!")
                         break
                 role_id, name = create_role(s)

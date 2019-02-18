@@ -13,7 +13,7 @@ from functools import reduce
 import requests
 
 from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, init_data, gen_name, make_login_server_data, make_quick_battle_data
-from const import EPISODES
+from const import EPISODES, SERVER_LIST
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -94,7 +94,7 @@ def read_bytes(s, length):
         s.settimeout(2)
         try:
             d = s.recv(length - len(buf))
-        except socket.timeout:
+        except:
             s.settimeout(None)
             break
         if not d:
@@ -148,6 +148,11 @@ def do_story(s, story):
             times += 1
         return times
 
+def do_attend(s):
+    s.send(b'\x00\x00\x00\x07\x00\x02\x00\x00\x00\x00\xc7')
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser()
@@ -156,11 +161,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     email = args.email
     server_id = args.server_id
-    SERVER_LIST = {
-        18: (18, '128.14.230.114', 30000),
-        20: (20, '128.14.230.246', 30000),
-    }
     version = '1.5.60090'
+
     server = SERVER_LIST[server_id]
     SERVERID, HOST, PORT = server
     # sql connection
@@ -182,22 +184,25 @@ if __name__ == "__main__":
         if datetime.datetime.now().hour == 3:  # 3 o'clock do daily
             sql = "UPDATE {} SET level=? WHERE email=?".format("pigs_"+str(SERVERID))
             c.execute(sql, (r['level'], email))
+            do_attend(s)
+            # get lastday food
+            s.send(b'\x00\x00\x00\x0c\x00\x05\x00\x00\x00\x01\x3d\x00\x03\x01\x02\x03')
         cards = r['cards']
         if cards:
             CARDS.update(cards)
         print('init:', r)
+        read_all(s)
         if not "name" in r:
             # need create role
             role_id, name = create_role(s, gen_name(seed=r["role_id"]))
             print('created role:', role_id, name)
-        read_all(s)
         chapter, section = r['story_index']
         left_chapters = EPISODES[chapter-1:]
         left_story = reduce(lambda t, c: t+c, left_chapters, [])[section-1:]
         battle_times = 0
         for story in left_story:
             battle_times += do_story(s, story)
-            if battle_times >= 20:  # 100/5 = 20 maxed battle times, stamina empty
+            if (r['level'] > 5 and battle_times >= 20) or battle_times >= 25:  # 100/5 = 20 maxed battle times, stamina empty
                 break
         if battle_times < 20:  # need shaodang
             time_section = int(datetime.datetime.now().hour / 8)
