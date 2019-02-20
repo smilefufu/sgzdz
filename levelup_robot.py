@@ -5,6 +5,7 @@ import random
 import socket
 import sys
 import time
+import json
 import datetime
 import argparse
 import sqlite3
@@ -148,10 +149,123 @@ def do_story(s, story):
             times += 1
         return times
 
-def do_attend(s):
-    s.send(b'\x00\x00\x00\x07\x00\x02\x00\x00\x00\x00\xc7')
+
+def do_attend(s, extra=dict()):
+    # return value: True need update db, False no need
+    now = datetime.datetime.now().strftime("%Y-%m-%d")
+    last_attend_day = extra.get("attend")
+    if now != last_attend_day:
+        print("attend")
+        s.send(b'\x00\x00\x00\x07\x00\x02\x00\x00\x00\x00\xc7')
+        extra["attend"] = now
+        return True
+    return False
 
 
+def eat_food(s, extra):
+    now = datetime.datetime.now()
+    if now.hour in range(12, 14):
+        key = "food_1"
+        data = b"\x00\x00\x00\x08\x00\x03\x00\x00\x00\x00\xc6\x01"
+    elif now.hour in range(18, 20):
+        key = "food_2"
+        data = b"\x00\x00\x00\x08\x00\x03\x00\x00\x00\x00\xc6\x02"
+    elif now.hour in range(21, 23):
+        key = "food_3"
+        data = b"\x00\x00\x00\x08\x00\x03\x00\x00\x00\x00\xc6\x03"
+    else:
+        return False
+    day = now.strftime("%Y-%m-%d")
+    if extra.get(key) != day:
+        print("eat", key)
+        s.send(data)
+        extra[key] = day
+        return True
+    return False
+
+def do_daily(s, extra):
+    now = datetime.datetime.now()
+    if now.hour in (0, 23) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
+        print("do daily")
+        # 10 times battle
+        s.send(b"\x00\x00\x00\x08\x00\x02\x00\x00\x00\x00\xd6\x03")
+        # explore card(2 times, 1 free)
+        s.send(b"\x00\x00\x00\x09\x00\x03\x00\x00\x00\x00\xa3\x01\x00")
+        s.send(b"\x00\x00\x00\x09\x00\x04\x00\x00\x00\x00\xa3\x01\x00")
+        # explore reward
+        s.send(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
+        time.sleep(0.5)
+        return True
+    return False
+
+def do_guild(s, extra):
+    now = datetime.datetime.now()
+    if now.hour in (0, 23) and extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
+        extra["guild"] = now.strftime("%Y-%m-%d")
+        print("do guild")
+        # join( TODO: check the right guild )
+        s.send(b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x02\x00\x00\x00")
+        # donate coin
+        for i in range(0, 5):
+            s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3a\x01")
+            time.sleep(0.1)
+        # visit famous
+        for i in range(0, 10):
+            s.send(b"\x00\x00\x00\x08\x00\x12\x00\x00\x00\x00\x47\x01")
+            time.sleep(0.1)
+            s.send(b"\x00\x00\x00\x07\x00\x13\x00\x00\x00\x00\x48")
+        # guild signup
+        s.send(b"\x00\x00\x00\x07\x00\x05\x00\x00\x00\x00\x3b")
+        # guild mission reward
+        s.send(b"\x00\x00\x00\x09\x00\x06\x00\x00\x00\x00\x3d\x03\x00")
+        # donate reward
+        s.send(b"\x00\x00\x00\x0a\x00\x06\x00\x00\x00\x00\x3d\x02\x00")
+
+        # reward 25, 50
+        s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x01")
+        s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x02")
+
+        # see guild shop
+        try:
+            raise
+            s.send(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x45")
+            while True:
+                try:
+                    head, body = read_one(s)
+                    print("head:", head)
+                    if head == b'\x00\x00\x00\x97':
+                        break
+                except:
+                    break
+            if head == b'\x00\x00\x00\x97':
+                # see shop and buy
+                print("get shop list")
+                tobuy = []
+                for i in range(0, 6):
+                    item = body[i*23+4, i*23+4+23]
+                    item_id = item[:4]
+                    currency = item[17]
+                    price = int.from_bytes(item[18:], byteorder='little')
+                    if currency == 1 or (currency == 14 and price < 300):
+                        tobuy.append(item_id)
+                if len(tobuy) >= 2:
+                    print("buy items")
+                    for item in tobuy[:2]:
+                        s.send(b"\x00\x00\x00\x0f\x00\x0a\x00\x00\x00\x00\x44" + item)
+                    # reward 75
+                    s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x03")
+        except:
+            import traceback
+            print(traceback.format_exc())
+            print("guild shop error!")
+
+        # leave guild
+        s.send(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
+        return True
+    pass
+
+def update_extra(table_name, email, extra, c):
+    c.execute("UPDATE "+table_name+" SET extra=? WHERE email=?", (json.dumps(extra), email))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -170,6 +284,9 @@ if __name__ == "__main__":
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
     table_name = 'pigs_{}'.format(server_id)
+    c.execute("SELECT extra FROM " + table_name + " WHERE email=?", (email, ))
+    row = c.fetchone() or [dict()]
+    extra = row[0]
 
     device_id = make_imei()
     print("login account:", email)
@@ -181,16 +298,28 @@ if __name__ == "__main__":
         s.send(make_login_server_data(version, user_id, SERVERID, device_id, session))
         head, body = read_one(s)
         r = init_data(body)
-        if datetime.datetime.now().hour == 3:  # 3 o'clock do daily
-            sql = "UPDATE {} SET level=? WHERE email=?".format("pigs_"+str(SERVERID))
-            c.execute(sql, (r['level'], email))
-            do_attend(s)
-            # get lastday food
-            s.send(b'\x00\x00\x00\x0c\x00\x05\x00\x00\x00\x01\x3d\x00\x03\x01\x02\x03')
+        print('init:', r)
+
+        c.execute("SELECT extra FROM " + table_name +" WHERE email=?", (email, ))
+        row = c.fetchone()
+        if row:
+            extra = row[0] or dict()
+            if extra:
+                try:
+                    extra = json.loads(extra)
+                except:
+                    extra = dict()
+            if do_attend(s, extra):
+                update_extra(table_name, email, extra, c)
+            if eat_food(s, extra):
+                update_extra(table_name, email, extra, c)
+            #if do_guild(s, extra):
+            #    update_extra(table_name, email, extra, c)
+            if do_daily(s, extra):
+                update_extra(table_name, email, extra, c)
         cards = r['cards']
         if cards:
             CARDS.update(cards)
-        print('init:', r)
         read_all(s)
         if not "name" in r:
             # need create role
@@ -209,7 +338,7 @@ if __name__ == "__main__":
             chapter = time_section + 1
             section = 1
             print('start shao dang')
-            for i in range(20):
+            for i in range(30):
                 s.send(make_quick_battle_data(chapter, section))
         # update info
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

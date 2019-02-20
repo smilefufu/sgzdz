@@ -38,7 +38,7 @@ if __name__ == "__main__":
             now = datetime.datetime.now()
             cnt = count_robot()
             if cnt == 0:
-                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-600 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT)
+                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-120 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT)
                 log(sql)
                 c.execute(sql)
                 rows = c.fetchall()

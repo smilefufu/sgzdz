@@ -176,7 +176,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
-    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 100")
+    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 50")
     idx = 0
     for row in c.fetchall():
         idx += 1
