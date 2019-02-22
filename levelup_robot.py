@@ -126,11 +126,11 @@ def read_one(s):
     return head, body
 
 def battle_episode(s, episode):
-    s.send(make_battle_data(CARDS, episode))
+    s.sendall(make_battle_data(CARDS, episode))
     #read_all(s)
     #time.sleep(10)
-    s.send(b'\x00\x00\x00\x02\x01\x00')
-    s.send(make_data("first_battle_end"))
+    s.sendall(b'\x00\x00\x00\x02\x01\x00')
+    s.sendall(make_data("first_battle_end"))
     read_all(s)
 
 def do_story(s, story):
@@ -138,11 +138,11 @@ def do_story(s, story):
     sp = story.split()
     if len(sp) == 1:
         # no battle, but card is possible
-        s.send(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03')
+        s.sendall(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03')
         # try not find any card
         return 0
     else:
-        s.send(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x06')
+        s.sendall(b'\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x06')
         times = 0
         for episode in sp[1:]:
             battle_episode(s, episode)
@@ -156,7 +156,7 @@ def do_attend(s, extra=dict()):
     last_attend_day = extra.get("attend")
     if now != last_attend_day:
         print("attend")
-        s.send(b'\x00\x00\x00\x07\x00\x02\x00\x00\x00\x00\xc7')
+        s.sendall(b'\x00\x00\x00\x07\x00\x02\x00\x00\x00\x00\xc7')
         extra["attend"] = now
         return True
     return False
@@ -178,7 +178,7 @@ def eat_food(s, extra):
     day = now.strftime("%Y-%m-%d")
     if extra.get(key) != day:
         print("eat", key)
-        s.send(data)
+        s.sendall(data)
         extra[key] = day
         return True
     return False
@@ -188,79 +188,127 @@ def do_daily(s, extra):
     if now.hour in (0, 23) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
         print("do daily")
         # 10 times battle
-        s.send(b"\x00\x00\x00\x08\x00\x02\x00\x00\x00\x00\xd6\x03")
+        s.sendall(b"\x00\x00\x00\x08\x00\x02\x00\x00\x00\x00\xd6\x03")
+        time.sleep(1)
         # explore card(2 times, 1 free)
-        s.send(b"\x00\x00\x00\x09\x00\x03\x00\x00\x00\x00\xa3\x01\x00")
-        s.send(b"\x00\x00\x00\x09\x00\x04\x00\x00\x00\x00\xa3\x01\x00")
+        s.sendall(b"\x00\x00\x00\x09\x00\x03\x00\x00\x00\x00\xa3\x01\x00")
+        time.sleep(1)
+        s.sendall(b"\x00\x00\x00\x09\x00\x04\x00\x00\x00\x00\xa3\x01\x00")
+        time.sleep(1)
         # explore reward
-        s.send(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
+        s.sendall(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
+        time.sleep(0.5)
+        # guild reward
+        s.sendall(b"\x00\x00\x00\x08\x00\x06\x00\x00\x00\x00\xd6\x0e")
         time.sleep(0.5)
         return True
     return False
 
+def heart_beat(s):
+    s.sendall(b"\x00\x00\x00\x02\x01\x00")
+
 def do_guild(s, extra):
     now = datetime.datetime.now()
-    if now.hour in (0, 23) and extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
+    print(extra)
+    if extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
-        # join( TODO: check the right guild )
-        s.send(b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x02\x00\x00\x00")
-        # donate coin
-        for i in range(0, 5):
-            s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3a\x01")
-            time.sleep(0.1)
+        # get mail item
+        # s.sendall(b"\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x69")
+        # join
+        s.sendall(b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x02\x00\x00\x00")
+        #time.sleep(10)
+        #heart_beat(s)
+        read_all(s)
         # visit famous
         for i in range(0, 10):
-            s.send(b"\x00\x00\x00\x08\x00\x12\x00\x00\x00\x00\x47\x01")
-            time.sleep(0.1)
-            s.send(b"\x00\x00\x00\x07\x00\x13\x00\x00\x00\x00\x48")
+            s.sendall(b"\x00\x00\x00\x08\x00\x12\x00\x00\x00\x00\x47\x01")
+            s.sendall(b"\x00\x00\x00\x07\x00\x13\x00\x00\x00\x00\x48")
+        read_all(s)
+        # donate coin
+        for i in range(0, 5):
+            s.sendall(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3a\x01")
+        read_all(s)
         # guild signup
-        s.send(b"\x00\x00\x00\x07\x00\x05\x00\x00\x00\x00\x3b")
+        s.sendall(b"\x00\x00\x00\x07\x00\x05\x00\x00\x00\x00\x3b")
+        read_one(s)
+        time.sleep(0.5)
         # guild mission reward
-        s.send(b"\x00\x00\x00\x09\x00\x06\x00\x00\x00\x00\x3d\x03\x00")
+        s.sendall(b"\x00\x00\x00\x09\x00\x06\x00\x00\x00\x00\x3d\x03\x00")
+        read_one(s)
+        time.sleep(0.5)
         # donate reward
-        s.send(b"\x00\x00\x00\x0a\x00\x06\x00\x00\x00\x00\x3d\x02\x00")
+        s.sendall(b"\x00\x00\x00\x09\x00\x07\x00\x00\x00\x00\x3d\x02\x00")
+        read_one(s)
+        time.sleep(0.5)
 
         # reward 25, 50
-        s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x01")
-        s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x02")
+        s.sendall(b"\x00\x00\x00\x08\x00\x08\x00\x00\x00\x00\x3c\x01")
+        read_one(s)
+        time.sleep(0.5)
+        s.sendall(b"\x00\x00\x00\x08\x00\x09\x00\x00\x00\x00\x3c\x02")
+        read_one(s)
 
         # see guild shop
         try:
-            raise
-            s.send(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x45")
+            s.sendall(b"\x00\x00\x00\x07\x00\x0a\x00\x00\x00\x00\x45")
             while True:
                 try:
                     head, body = read_one(s)
-                    print("head:", head)
                     if head == b'\x00\x00\x00\x97':
                         break
                 except:
                     break
+            buy_succ = False
             if head == b'\x00\x00\x00\x97':
                 # see shop and buy
                 print("get shop list")
                 tobuy = []
                 for i in range(0, 6):
-                    item = body[i*23+4, i*23+4+23]
+                    item = body[i*23+4:i*23+4+23]
                     item_id = item[:4]
                     currency = item[17]
                     price = int.from_bytes(item[18:], byteorder='little')
-                    if currency == 1 or (currency == 14 and price < 300):
+                    if currency == 1 or (currency == 14 and price <= 200):
                         tobuy.append(item_id)
                 if len(tobuy) >= 2:
                     print("buy items")
                     for item in tobuy[:2]:
-                        s.send(b"\x00\x00\x00\x0f\x00\x0a\x00\x00\x00\x00\x44" + item)
+                        s.sendall(b"\x00\x00\x00\x0f\x00\x0a\x00\x00\x00\x00\x44" + item + b"\x00\x00\x00\x00")
+                    # buy reward
+                    s.sendall(b"\x00\x00\x00\x09\x00\x0b\x00\x00\x00\x00\x3d\x05\x00")
                     # reward 75
-                    s.send(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x03")
+                    s.sendall(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x03")
+                    buy_succ = True
+                else:
+                    raise
+            s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x45")
+            time.sleep(1)
+            s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x45")
+            time.sleep(1)
+            # shop refresh reward
+            s.sendall(b"\x00\x00\x00\x09\x00\x0b\x00\x00\x00\x00\x3d\x04\x00")
+
+            if buy_succ:
+                # reward 75
+                s.sendall(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x04")
+            else:
+                # reward 100
+                s.sendall(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x03")
+
         except:
             import traceback
             print(traceback.format_exc())
             print("guild shop error!")
 
+
+
+        read_all(s)
         # leave guild
-        s.send(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
+        print("leave guild")
+        s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
+        heart_beat(s)
+        read_one(s)
         return True
     pass
 
@@ -295,11 +343,12 @@ if __name__ == "__main__":
     session = login_verify(user_id, token, version=version, server_id=SERVERID)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        s.send(make_login_server_data(version, user_id, SERVERID, device_id, session))
+        s.sendall(make_login_server_data(version, user_id, SERVERID, device_id, session, os="Android OS 6.0.1 / API-23 (V417IR/eng.root.20181010.162559)", phone="Netease MuMu"))
         head, body = read_one(s)
         r = init_data(body)
         print('init:', r)
-
+        read_all(s)
+        heart_beat(s)
         c.execute("SELECT extra FROM " + table_name +" WHERE email=?", (email, ))
         row = c.fetchone()
         if row:
@@ -309,13 +358,18 @@ if __name__ == "__main__":
                     extra = json.loads(extra)
                 except:
                     extra = dict()
-            if do_attend(s, extra):
-                update_extra(table_name, email, extra, c)
-            if eat_food(s, extra):
-                update_extra(table_name, email, extra, c)
-            #if do_guild(s, extra):
+            #if eat_food(s, extra):
             #    update_extra(table_name, email, extra, c)
+            try:
+                if do_guild(s, extra):
+                    update_extra(table_name, email, extra, c)
+            except:
+                # don't continue when failed
+                update_extra(table_name, email, extra, c)
+                pass
             if do_daily(s, extra):
+                update_extra(table_name, email, extra, c)
+            if do_attend(s, extra):
                 update_extra(table_name, email, extra, c)
         cards = r['cards']
         if cards:
@@ -339,7 +393,7 @@ if __name__ == "__main__":
             section = 1
             print('start shao dang')
             for i in range(30):
-                s.send(make_quick_battle_data(chapter, section))
+                s.sendall(make_quick_battle_data(chapter, section))
         # update info
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sql = "UPDATE {} SET level = ?, last_login=? WHERE email=?".format(table_name)
