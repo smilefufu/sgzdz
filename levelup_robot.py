@@ -358,10 +358,14 @@ if __name__ == "__main__":
                     extra = json.loads(extra)
                 except:
                     extra = dict()
-            #if eat_food(s, extra):
-            #    update_extra(table_name, email, extra, c)
+            if len(r["cards"]) >=3:
+                print('in here')
+                extra["cards"] = [c[0] for c in r["cards"]]
+                update_extra(table_name, email, extra, c)
+            if eat_food(s, extra):
+                update_extra(table_name, email, extra, c)
             try:
-                if do_guild(s, extra):
+                if r["level"] >=19 and do_guild(s, extra):
                     update_extra(table_name, email, extra, c)
             except:
                 # don't continue when failed

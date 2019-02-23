@@ -9,7 +9,7 @@ import traceback
 
 import requests
 
-from const import CARD_CODE
+from const import CARD_CODE_PURPLE, CARD_CODE_GOLD
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 8.0.0; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -427,7 +427,10 @@ def find_cards(data):
     cards = set()
     if b"sysMail_addressor_BlackWings" in data:
         # start  searching
-        for card, code in CARD_CODE.items():
+        all_card_code = dict()
+        all_card_code.update(CARD_CODE_GOLD)
+        all_card_code.update(CARD_CODE_PURPLE)
+        for card, code in all_card_code.items():
             idx = data.find(code)
             if idx > 8:
                 card_id = data[idx-8:idx]
