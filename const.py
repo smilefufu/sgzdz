@@ -81,6 +81,11 @@ CARD_CODE_GOLD = {
     "甄洛": b"\x12\x37\x01\x00",
 }
 
+STACK_ABLES = dict(
+    bind_gold=b"\x5c\x01\x02",
+    fresh_card=b"\x20\x64\x00",
+    gold_wine=b"\x5c\x01\x12",
+)
 
 __SERVER_LIST = [{'id': 1, 'ip': '128.14.236.13', 'state': 1, 'name': '三國霸業', 'order_number': 1, 'port': 30000}, {'id': 2, 'ip': '128.14.236.13', 'state': 1, 'name': '金戈劍雨', 'order_number': 2, 'port': 30000}, {'id': 3, 'ip': '128.14.236.13', 'state': 1, 'name': '虎嘯龍吟', 'order_number': 3, 'port': 30000}, {'id': 4, 'ip': '128.14.236.13', 'state': 1, 'name': '鐵馬冰河', 'order_number': 4, 'port': 30000}, {'id': 5, 'ip': '128.14.236.13', 'state': 1, 'name': '風聲鶴唳', 'order_number': 5, 'port': 30000}, {'id': 6, 'ip': '128.14.236.13', 'state': 1, 'name': '亂石穿空', 'order_number': 6, 'port': 30000}, {'id': 7, 'ip': '128.14.236.13', 'state': 1, 'name': '飛龍在天', 'order_number': 7, 'port': 30000}, {'id': 8, 'ip': '128.14.236.13', 'state': 1, 'name': '大浪淘沙', 'order_number': 8, 'port': 30000}, {'id': 9, 'ip': '103.98.17.254', 'state': 1, 'name': '臥龍鳳雛', 'order_number': 9, 'port': 30000}, {'id': 10, 'ip': '103.98.17.254', 'state': 1, 'name': '星月交輝', 'order_number': 10, 'port': 30000}, {'id': 11, 'ip': '103.98.17.254', 'state': 1, 'name': '對酒當歌', 'order_number': 11, 'port': 30000}, {'id': 12, 'ip': '103.98.17.254', 'state': 1, 'name': '虎踞龍盤', 'order_number': 12, 'port': 30000}, {'id': 13, 'ip': '103.98.17.254', 'state': 1, 'name': '群雄逐鹿', 'order_number': 13, 'port': 30000}, {'id': 14, 'ip': '103.98.17.254', 'state': 1, 'name': '君臨天下', 'order_number': 14, 'port': 30000}, {'id': 15, 'ip': '103.98.17.254', 'state': 1, 'name': '臥虎藏龍', 'order_number': 15, 'port': 30000}, {'id': 16, 'ip': '103.98.17.254', 'state': 1, 'name': '驚濤拍岸', 'order_number': 16, 'port': 30000}, {'id': 17, 'ip': '128.14.236.45', 'state': 1, 'name': '其疾如風', 'order_number': 17, 'port': 30000}, {'id': 18, 'ip': '128.14.230.114', 'state': 1, 'name': '狼煙四起', 'order_number': 18, 'port': 30000}, {'id': 19, 'ip': '128.14.236.49', 'state': 1, 'name': '沃野千里', 'order_number': 19, 'port': 30000}, {'id': 20, 'ip': '128.14.230.246', 'state': 1, 'name': '石破天驚', 'order_number': 20, 'port': 30000}]
 SERVER_LIST = dict()

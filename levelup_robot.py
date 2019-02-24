@@ -3,7 +3,6 @@
 
 import random
 import socket
-import sys
 import time
 import json
 import datetime
@@ -14,13 +13,14 @@ from functools import reduce
 import requests
 
 from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, init_data, gen_name, make_login_server_data, make_quick_battle_data
-from const import EPISODES, SERVER_LIST
+from const import EPISODES, SERVER_LIST, STACK_ABLES
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
 }
 
 CARDS = set()
+GOLD_WINE = 0
 
 def make_imei():
     return "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
@@ -107,12 +107,11 @@ def read_bytes(s, length):
 def read_all(s):
     while True:
         try:
-            head = read_bytes(s, 4)
-            if not head:
+            pack = read_one(s)
+            if not pack:
+                print("no more pack!")
                 break
-            body = read_bytes(s, int.from_bytes(head, byteorder="big"))
-            if not body:
-                break
+            head, body = pack
         except socket.timeout:
             s.settimeout(None)
             print("all data received!")
@@ -123,6 +122,10 @@ def read_one(s):
     if not head:
         return None
     body = read_bytes(s, int.from_bytes(head, byteorder="big"))
+    if head == b"\x00\x00\x00\x09" and body.startswith(b"\x01\x00\x5c\x01\x12"):  # gold wine
+        global GOLD_WINE
+        GOLD_WINE = int.from_bytes(body[-4:], byteorder="little")
+        print("wine change:", GOLD_WINE)
     return head, body
 
 def battle_episode(s, episode):
@@ -209,7 +212,6 @@ def heart_beat(s):
 
 def do_guild(s, extra):
     now = datetime.datetime.now()
-    print(extra)
     if extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
@@ -310,7 +312,48 @@ def do_guild(s, extra):
         heart_beat(s)
         read_one(s)
         return True
-    pass
+
+
+def draw_card(s):
+    times = GOLD_WINE
+    print("draw",times,"times")
+    for turn in range(times):
+        idx = (turn + 19).to_bytes(2, byteorder="big")
+        s.sendall(b"\x00\x00\x00\x09" + idx + b"\x00\x00\x00\x00\xa3\x02\x00")
+
+
+def achievement_reward(s, extra):
+    if not extra.get("achievement"):
+        # 乱世英雄 10, 12, 15, 18, 20, 25
+        for idx, item in enumerate([10, 12, 15, 18, 20, 25]):
+            turn = (idx + 22).to_bytes(2, byteorder="big")
+            code = (idx + 1).to_bytes(1, byteorder="big")
+            s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x01" + code)
+        # 南征北战 ch3, ch4
+        for idx, item in enumerate(["ch3", "ch4"]):
+            turn = (idx + 28).to_bytes(2, byteorder="big")
+            code = (idx + 1).to_bytes(1, byteorder="big")
+            s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x03" + code)
+        extra["achievment"] = True
+        return True
+
+def seven_day(s, extra):
+    if not extra.get("seven_day"):
+        extra["seven_day"] = True
+        s.sendall(b"\x00\x00\x00\x0f\x00\x26\x00\x00\x00\x01\x01\x01\x00\x00\x00\x01\x00\x00\x00")  # day1 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x27\x00\x00\x00\x01\x01\x02\x00\x00\x00\x01\x00\x00\x00")  # day1 1-2
+
+        s.sendall(b"\x00\x00\x00\x0f\x00\x28\x00\x00\x00\x01\x01\x01\x00\x00\x00\x02\x00\x00\x00")  # day2 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x29\x00\x00\x00\x01\x01\x02\x00\x00\x00\x02\x00\x00\x00")  # day2 1-2
+
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2a\x00\x00\x00\x01\x01\x01\x00\x00\x00\x03\x00\x00\x00")  # day3 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2b\x00\x00\x00\x01\x01\x02\x00\x00\x00\x03\x00\x00\x00")  # day3 1-2
+
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2c\x00\x00\x00\x01\x01\x01\x00\x00\x00\x04\x00\x00\x00")  # day4 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2d\x00\x00\x00\x01\x01\x01\x00\x00\x00\x05\x00\x00\x00")  # day5 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2e\x00\x00\x00\x01\x01\x01\x00\x00\x00\x06\x00\x00\x00")  # day6 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2f\x00\x00\x00\x01\x01\x01\x00\x00\x00\x07\x00\x00\x00")  # day7 1-1
+        return True
 
 def update_extra(table_name, email, extra, c):
     c.execute("UPDATE "+table_name+" SET extra=? WHERE email=?", (json.dumps(extra), email))
@@ -360,17 +403,20 @@ if __name__ == "__main__":
                     extra = dict()
             if len(r["cards"]) >=3:
                 print('in here')
-                extra["cards"] = [c[0] for c in r["cards"]]
-                update_extra(table_name, email, extra, c)
+                cards = ",".join(c[0] for c in r["cards"])
+                c.execute("UPDATE "+table_name+" SET cards=? WHERE email=?", (cards, email))
+                if "cards" in extra:
+                    del extra["cards"]
             if eat_food(s, extra):
                 update_extra(table_name, email, extra, c)
             try:
-                if r["level"] >=19 and do_guild(s, extra):
-                    update_extra(table_name, email, extra, c)
+                raise
+                if r["level"] >=19:
+                    do_guild(s, extra)
             except:
-                # don't continue when failed
-                update_extra(table_name, email, extra, c)
+                # still mark as done when failed
                 pass
+            update_extra(table_name, email, extra, c)
             if do_daily(s, extra):
                 update_extra(table_name, email, extra, c)
             if do_attend(s, extra):
@@ -383,6 +429,16 @@ if __name__ == "__main__":
             # need create role
             role_id, name = create_role(s, gen_name(seed=r["role_id"]))
             print('created role:', role_id, name)
+
+        if r["level"] >= 25 and seven_day(s, extra):  # TODO: record create time to decide when to get reward
+            update_extra(table_name, email, extra, c)
+
+        # get archivment reward and draw all wine
+        if r["level"] >= 25 and achievement_reward(s, extra):
+            update_extra(table_name, email, extra, c)
+        read_all(s)
+        draw_card(s)
+
         chapter, section = r['story_index']
         left_chapters = EPISODES[chapter-1:]
         left_story = reduce(lambda t, c: t+c, left_chapters, [])[section-1:]
@@ -396,7 +452,7 @@ if __name__ == "__main__":
             chapter = time_section + 1
             section = 1
             print('start shao dang')
-            for i in range(30):
+            for i in range(10):
                 s.sendall(make_quick_battle_data(chapter, section))
         # update info
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
