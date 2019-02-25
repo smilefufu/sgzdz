@@ -426,14 +426,16 @@ def make_story_data(index):
 def find_cards(data):
     cards = set()
     if b"sysMail_addressor_BlackWings" in data:
+        end_pos = data.find(b"sysMail_addressor_BlackWings")
+        search_data = data[:end_pos]
         # start  searching
         all_card_code = dict()
         all_card_code.update(CARD_CODE_GOLD)
         all_card_code.update(CARD_CODE_PURPLE)
         for card, code in all_card_code.items():
-            idx = data.find(code)
+            idx = search_data.find(code)
             if idx > 8:
-                card_id = data[idx-8:idx]
+                card_id = search_data[idx-8:idx]
                 cards.add((card, card_id))
     return cards
 
@@ -454,14 +456,14 @@ def init_data(data):
     ret = dict()
     ret['role_id'] = int.from_bytes(data[12:16], byteorder="little")
     name_length = data[22]
-    name_length
     if name_length:
         ret['name'] = data[23:23+name_length].decode('utf8')
     ret['model_id'] = data[name_length+23]
     ret['level'] = data[name_length+24]
     ret['exp'] = int.from_bytes(data[name_length+35:name_length+39], byteorder="little")
-    ret['story_index'] = (data[name_length+54], data[name_length+55])
-    ret['cards'] = find_cards(data)
+    unknow_strlen = data[name_length+52]
+    ret['story_index'] = (data[name_length+unknow_strlen+54], data[name_length+unknow_strlen+55])
+    ret['cards'] = find_cards(data[name_length+unknow_strlen+55:])
     return ret
 
 def get_formation(cards, episode=None):
