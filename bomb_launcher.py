@@ -36,7 +36,7 @@ async def online(request):
             if (2 <= len(name) <= 3 and gender=="3") or (len(name)==4 and name.isdigit()):
                 threshold = 6
                 if key in check_pool:
-                    check_pool[key].append(player)
+                    check_pool[key] = player
                     if len(check_pool[key]) >= threshold:
                         logging.info("xx players:", check_pool[key])
                         save_names(check_pool[key])
