@@ -410,7 +410,6 @@ if __name__ == "__main__":
             if eat_food(s, extra):
                 update_extra(table_name, email, extra, c)
             try:
-                raise
                 if r["level"] >=19:
                     do_guild(s, extra)
             except:
