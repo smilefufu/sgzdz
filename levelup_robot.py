@@ -324,6 +324,7 @@ def draw_card(s):
 
 def achievement_reward(s, extra):
     if not extra.get("achievement"):
+        print("do achievement")
         # 乱世英雄 10, 12, 15, 18, 20, 25
         for idx, item in enumerate([10, 12, 15, 18, 20, 25]):
             turn = (idx + 22).to_bytes(2, byteorder="big")
@@ -334,7 +335,7 @@ def achievement_reward(s, extra):
             turn = (idx + 28).to_bytes(2, byteorder="big")
             code = (idx + 1).to_bytes(1, byteorder="big")
             s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x03" + code)
-        extra["achievment"] = True
+        extra["achievement"] = True
         return True
 
 def seven_day(s, extra):
@@ -434,6 +435,7 @@ if __name__ == "__main__":
 
         # get archivment reward and draw all wine
         if r["level"] >= 25 and achievement_reward(s, extra):
+            print(extra)
             update_extra(table_name, email, extra, c)
         read_all(s)
         draw_card(s)
