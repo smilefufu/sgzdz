@@ -190,20 +190,16 @@ def do_daily(s, extra):
     now = datetime.datetime.now()
     if now.hour in (0, 23) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
         print("do daily")
+        extra["daily"] = now.strftime("%Y-%m-%d")
         # 10 times battle
         s.sendall(b"\x00\x00\x00\x08\x00\x02\x00\x00\x00\x00\xd6\x03")
-        time.sleep(1)
         # explore card(2 times, 1 free)
         s.sendall(b"\x00\x00\x00\x09\x00\x03\x00\x00\x00\x00\xa3\x01\x00")
-        time.sleep(1)
         s.sendall(b"\x00\x00\x00\x09\x00\x04\x00\x00\x00\x00\xa3\x01\x00")
-        time.sleep(1)
         # explore reward
         s.sendall(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
-        time.sleep(0.5)
         # guild reward
         s.sendall(b"\x00\x00\x00\x08\x00\x06\x00\x00\x00\x00\xd6\x0e")
-        time.sleep(0.5)
         return True
     return False
 
@@ -457,6 +453,6 @@ if __name__ == "__main__":
                 s.sendall(make_quick_battle_data(chapter, section))
         # update info
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sql = "UPDATE {} SET level = ?, last_login=? WHERE email=?".format(table_name)
-        c.execute(sql, (r['level'], now, email))
+        sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
+        c.execute(sql, (r['level'], now, r["role_id"], email))
         exit()
