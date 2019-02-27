@@ -427,7 +427,7 @@ if __name__ == "__main__":
         read_all(s)
         if not "name" in r:
             # need create role
-            role_id, name = create_role(s, gen_name(seed=r["role_id"]))
+            role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
             print('created role:', role_id, name)
 
         if r["level"] >= 25 and seven_day(s, extra):  # TODO: record create time to decide when to get reward
