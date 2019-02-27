@@ -9,7 +9,7 @@ import traceback
 
 import requests
 
-from const import CARD_CODE_PURPLE, CARD_CODE_GOLD
+from const import CARD_CODE_PURPLE, CARD_CODE_GOLD, LAST_NAME, BOY_NAME, GIRL_NAME
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 8.0.0; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -501,14 +501,16 @@ def make_quick_battle_data(chapter, section):
     return data
 
 
-def gen_name(seed=None):
-    name_pool = '幸段謝羊彬穆品狄琴芬丁墨鑫先耀嵇計岑昝樺熹忠賀才躍杜彪彭黃孟支良道房賓隗高博蔣吾石洋婁謙山婷龐談顏鋼慈明貝文超蔔尤愛紹伯全硯雅清昊翁楠袁戴壇元皓浩敏霖戎乾沙裘春柳雄應卞輝崗俊洪濱張苗雷龍顧凱魏危樊郎琰翰妍江中若葉繆吉合樂花祖何松傳邦糜慧迎梓邱執冉梁畢夏宣隆鵬思彰趙純止伶宋萬蘇洲竇莉涯毛坤鋒旭光竣巫璿曲義埃阮暉傑寧漩喻紫新晗雲非亞谷嫣範淦富雪午逸勝甄和童康也時辰鄒學翊翔卓之湛珂任川葛韶郝宇徐暴晨詹西琦宸董容濤燕伊啟烏磊許曆影陶勃宵蔡瑋皮米興貴費豪車健餘呂閃成弓枚薛晏芮芪汪常行季剛繼恬路祈單宝賁利錢荔彎群馮鄭強仇曉銳維熊瑞王凡訪伏殊紅疏世韋珺力捷戚胡紀河志諾生嵐賈蕭涔陳滑鈄駱蓬玉鐘馬劉項基珈與炎尹智靳境滕民朱稚筱昌靜衛伍向賽章解書諸姚仙陽唐姜秋豔子祁汲仰孔儲然盧久懿孫牧金田言培嶽多天煒舒霍羲大俞英奕君樹銘勇國曼軒鬱根刁卿潘酆湯郭虞錦臧禹偉建禮景盛嚴曹宮梅本龔茅倪籽峻羅莫宓壹森鳳威連廉奚安仲施藝鋮欒煜柏邢茂侯鄧淼傅褚雁席珮榮閔耶齊楊騰程絢惠林吳殷方泰竹海淵華堅裴呈希乙麻秦家遠班孜平符水祥粟焦聆鈞昕韓儀左藍振杭斌祝琅宏藤顯邴飛臻士昆夜'
-    name_pool = list(name_pool)
-    random.shuffle(name_pool)
-    name = "".join(name_pool[:3])
+def gen_name(seed=None, gender=3):
+    random.shuffle(LAST_NAME)
+    last_name = LAST_NAME[0]
+    FN = BOY_NAME if gender == 3 else GIRL_NAME
+    random.shuffle(FN)
+    first_name = FN[0]
+    name = last_name + first_name
     if str(seed).isdigit():
         seed = int(str(seed)) % 10000
     if seed:
         sd = int.from_bytes(str(seed).encode('utf8'), byteorder="little")
-        name += baseN(sd, 36)[:5]
+        name += baseN(sd, 36)[:4]
     return name
