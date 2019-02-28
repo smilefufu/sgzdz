@@ -27,7 +27,7 @@ if __name__ == "__main__":
     c = conn.cursor()
     table_name = 'pigs_{}'.format(args.server_id)
 
-    MAX_ONLINE_COUNT = 10
+    MAX_ONLINE_COUNT = 8
 
     if args.op == "add":
         # sql connection
@@ -38,7 +38,7 @@ if __name__ == "__main__":
             now = datetime.datetime.now()
             cnt = count_robot()
             if cnt == 0:
-                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-120 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT)
+                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-90 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT)
                 log(sql)
                 c.execute(sql)
                 rows = c.fetchall()
@@ -47,6 +47,6 @@ if __name__ == "__main__":
                 for row in rows:
                     email = row[0]
                     log("start levelup", email)
-                    os.popen("python levelup_robot.py {} {} 1>>lvl.log 2>>lvl.log &".format(email, args.server_id))
+                    os.popen("python levelup_robot.py {} {} 1>>lvl.{}.log 2>>lvl.{}.log &".format(email, args.server_id, args.server_id, args.server_id))
             else:
                 time.sleep(10)

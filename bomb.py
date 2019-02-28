@@ -176,10 +176,10 @@ if __name__ == "__main__":
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
-    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 50")
+    c.execute("SELECT * FROM guards ORDER BY RANDOM() LIMIT 20")
     idx = 0
     for row in c.fetchall():
         idx += 1
-        guards.append(one(row[0], targets, idx%40))
+        guards.append(one(row[0], targets, idx))
     loop.run_until_complete(asyncio.gather(*guards, count_down(seconds+40)))
     loop.close()

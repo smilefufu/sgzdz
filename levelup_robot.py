@@ -13,7 +13,7 @@ from functools import reduce
 import requests
 
 from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, init_data, gen_name, make_login_server_data, make_quick_battle_data
-from const import EPISODES, SERVER_LIST, STACK_ABLES
+from const import EPISODES, SERVER_LIST, STACK_ABLES, GUILD_ID
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -206,7 +206,7 @@ def do_daily(s, extra):
 def heart_beat(s):
     s.sendall(b"\x00\x00\x00\x02\x01\x00")
 
-def do_guild(s, extra):
+def do_guild(s, extra, server_id=20):
     now = datetime.datetime.now()
     if extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
         extra["guild"] = now.strftime("%Y-%m-%d")
@@ -214,7 +214,10 @@ def do_guild(s, extra):
         # get mail item
         # s.sendall(b"\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x69")
         # join
-        s.sendall(b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x02\x00\x00\x00")
+        instructure = GUILD_ID.get(server_id)
+        if not instructure:
+            return True
+        s.sendall(instructure)
         #time.sleep(10)
         #heart_beat(s)
         read_all(s)
@@ -408,7 +411,7 @@ if __name__ == "__main__":
                 update_extra(table_name, email, extra, c)
             try:
                 if r["level"] >=19:
-                    do_guild(s, extra)
+                    do_guild(s, extra, SERVERID)
             except:
                 # still mark as done when failed
                 pass

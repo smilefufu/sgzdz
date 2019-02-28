@@ -92,6 +92,10 @@ SERVER_LIST = dict()
 for srv in __SERVER_LIST:
     SERVER_LIST[srv['id']] = (srv['id'], srv['ip'], srv['port'])
 
+GUILD_ID = {
+    20: b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x02\x00\x00\x00",
+}
+
 __EPISODES = ["""
               初入乱世
               初战黄巾 1-1
