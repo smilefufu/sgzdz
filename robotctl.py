@@ -8,8 +8,8 @@ import datetime
 import argparse
 
 
-def count_robot():
-    cnt = os.popen("ps aux | grep levelup_robot.py | grep -v grep | wc -l").read()
+def count_robot(server_id):
+    cnt = os.popen("ps aux | grep levelup_robot.py | grep \" {}\" | grep -v grep | wc -l".format(server_id)).read()
     return int(cnt)
 
 def log(*args):
@@ -36,17 +36,24 @@ if __name__ == "__main__":
     elif args.op == "levelup":
         while True:
             now = datetime.datetime.now()
-            cnt = count_robot()
-            if cnt == 0:
-                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-90 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT)
+            cnt = count_robot(args.server_id)
+            if cnt < MAX_ONLINE_COUNT:
+                sql = "SELECT email FROM {} WHERE last_login is null or datetime(last_login) < datetime('now', '-180 minute', 'localtime') ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                 log(sql)
                 c.execute(sql)
                 rows = c.fetchall()
+                now = datetime.datetime.now()
+                if not rows and now.hour in (12, 13, 18, 19, 21, 22):
+                    sql = "SELECT email FROM {} ORDER BY level ASC, last_login ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
+                    log(sql)
+                    c.execute(sql)
+                    rows = c.fetchall()
                 if not rows:
-                    time.sleep(60)
+                    time.sleep(30)
                 for row in rows:
                     email = row[0]
                     log("start levelup", email)
                     os.popen("python levelup_robot.py {} {} 1>>lvl.{}.log 2>>lvl.{}.log &".format(email, args.server_id, args.server_id, args.server_id))
             else:
+                # TODO: start at certen hours
                 time.sleep(10)

@@ -200,6 +200,9 @@ def do_daily(s, extra):
         s.sendall(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
         # guild reward
         s.sendall(b"\x00\x00\x00\x08\x00\x06\x00\x00\x00\x00\xd6\x0e")
+        # get mail rewrd when monday
+        if now.weekday() == 0:
+            s.sendall(b"\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x69")
         return True
     return False
 
@@ -207,12 +210,10 @@ def heart_beat(s):
     s.sendall(b"\x00\x00\x00\x02\x01\x00")
 
 def do_guild(s, extra, server_id=20):
-    now = datetime.datetime.now()
+    now = datetime.datetime.now() - datetime.timedelta(hours=5)
     if extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
-        # get mail item
-        # s.sendall(b"\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x69")
         # join
         instructure = GUILD_ID.get(server_id)
         if not instructure:
@@ -291,10 +292,10 @@ def do_guild(s, extra, server_id=20):
             s.sendall(b"\x00\x00\x00\x09\x00\x0b\x00\x00\x00\x00\x3d\x04\x00")
 
             if buy_succ:
-                # reward 75
+                # reward 100
                 s.sendall(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x04")
             else:
-                # reward 100
+                # reward 75
                 s.sendall(b"\x00\x00\x00\x08\x00\x0b\x00\x00\x00\x00\x3c\x03")
 
         except:
@@ -445,6 +446,7 @@ if __name__ == "__main__":
         battle_times = 0
         for story in left_story:
             battle_times += do_story(s, story)
+            read_all(s)
             if (r['level'] > 5 and battle_times >= 20) or battle_times >= 25:  # 100/5 = 20 maxed battle times, stamina empty
                 break
         if battle_times < 20:  # need shaodang

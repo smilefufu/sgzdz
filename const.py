@@ -94,6 +94,7 @@ for srv in __SERVER_LIST:
 
 GUILD_ID = {
     20: b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x02\x00\x00\x00",
+    18: b"\x00\x00\x00\x0b\x00\x09\x00\x00\x00\x00\x2b\x0b\x00\x00\x00",
 }
 
 __EPISODES = ["""
@@ -173,6 +174,15 @@ __EPISODES = ["""
               国之重器
               撤回江东
               袁军追击 5-1
+              突破阻拦 5-2
+              穷追不舍 5-3
+              大将麹义
+              大破先登 5-4
+              绕道荆州 5-5
+              荆军阻挠 5-6
+              智败蒯越 5-7
+              趁机突围
+              大战颜良 5-8
               """]
 
 EPISODES = list(item.strip().split("\n") for item in __EPISODES)
