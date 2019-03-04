@@ -109,12 +109,13 @@ def read_all(s):
         try:
             pack = read_one(s)
             if not pack:
-                return False
+                print("no more pack!")
+                break
             head, body = pack
         except socket.timeout:
             s.settimeout(None)
             print("all data received!")
-            return True
+            break
 
 def read_one(s):
     head = read_bytes(s, 4)
@@ -302,8 +303,7 @@ def do_guild(s, extra, server_id=20):
 
 
 
-        if not read_all(s):
-            raise BaseException("guild bug occured!")
+        read_all(s)
         # leave guild
         print("leave guild")
         s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
@@ -392,77 +392,4 @@ if __name__ == "__main__":
         print('init:', r)
         read_all(s)
         heart_beat(s)
-        c.execute("SELECT extra FROM " + table_name +" WHERE email=?", (email, ))
-        row = c.fetchone()
-        if row:
-            extra = row[0] or dict()
-            if extra:
-                try:
-                    extra = json.loads(extra)
-                except:
-                    extra = dict()
-            if len(r["cards"]) >=3:
-                print('in here')
-                cards = ",".join(c[0] for c in r["cards"])
-                c.execute("UPDATE "+table_name+" SET cards=? WHERE email=?", (cards, email))
-                if "cards" in extra:
-                    del extra["cards"]
-            if eat_food(s, extra):
-                update_extra(table_name, email, extra, c)
-            try:
-                if r["level"] >=19:
-                    do_guild(s, extra, SERVERID)
-                    update_extra(table_name, email, extra, c)
-            except:
-                # still mark as done when failed
-                update_extra(table_name, email, extra, c)
-                # re-login and quit guild
-                os.popen("python quitguild.py {} {} &".format(email, server_id))
-                now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                os.popen("echo {} {} > guild_bug_account.log".format(now, email))
-                exit()
-                pass
-            if do_daily(s, extra):
-                update_extra(table_name, email, extra, c)
-            if do_attend(s, extra):
-                update_extra(table_name, email, extra, c)
-        cards = r['cards']
-        if cards:
-            CARDS.update(cards)
-        read_all(s)
-        if not "name" in r:
-            # need create role
-            role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
-            print('created role:', role_id, name)
-
-        if r["level"] >= 25 and seven_day(s, extra):  # TODO: record create time to decide when to get reward
-            update_extra(table_name, email, extra, c)
-
-        # get archivment reward and draw all wine
-        if r["level"] >= 25 and achievement_reward(s, extra):
-            print(extra)
-            update_extra(table_name, email, extra, c)
-        read_all(s)
-        draw_card(s)
-
-        chapter, section = r['story_index']
-        left_chapters = EPISODES[chapter-1:]
-        left_story = reduce(lambda t, c: t+c, left_chapters, [])[section-1:]
-        battle_times = 0
-        for story in left_story:
-            battle_times += do_story(s, story)
-            read_all(s)
-            if (r['level'] > 5 and battle_times >= 20) or battle_times >= 25:  # 100/5 = 20 maxed battle times, stamina empty
-                break
-        if battle_times < 20:  # need shaodang
-            time_section = int(datetime.datetime.now().hour / 8)
-            chapter = time_section + 1
-            section = 1
-            print('start shao dang')
-            for i in range(10):
-                s.sendall(make_quick_battle_data(chapter, section))
-        # update info
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
-        c.execute(sql, (r['level'], now, r["role_id"], email))
-        exit()
+        s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
