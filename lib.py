@@ -416,6 +416,8 @@ def make_data(data_type):
         pass
     if data_type == "first_battle_end":
         return b"\x00\x00\x00\x2f\x00\x05\x00\x00\x00\x00\x0a\x01\x00\x03\xae\x00\x01\x63\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    if data_type == "battle_end_5-8":
+        return b"\x00\x00\x00\x47\x00\x29\x00\x00\x00\x00\x0a\x01\x00\x03\x82\x01\x02\xa8\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x81\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
 
 def make_story_data(index):
@@ -433,7 +435,7 @@ def find_cards(data):
         all_card_code.update(CARD_CODE_GOLD)
         all_card_code.update(CARD_CODE_PURPLE)
         for card, code in all_card_code.items():
-            idx = search_data.find(code)
+            idx = search_data.find(code+b"\x00\x00\x00\x00")
             if idx > 8:
                 card_id = search_data[idx-8:idx]
                 cards.add((card, card_id))
@@ -468,15 +470,10 @@ def init_data(data):
 
 def get_formation(cards, episode=None):
     formation = [b'\x00'*8] * 15
-    if episode == '1-0':
-        cardmap = dict(cards)
-        formation[2] = cardmap['zumao']
-        formation[8] = cardmap['xiaoqiao']
-    else:
-        for idx, card in enumerate(cards):
-            if idx > 15:
-                break
-            formation[idx] = card[1]
+    for idx, card in enumerate(cards):
+        if idx > 0:
+            break
+        formation[idx] = card[1]
     return b"".join(formation)
 
 
