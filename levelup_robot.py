@@ -303,7 +303,7 @@ def do_guild(s, extra, server_id=20):
 
 
 
-        read_all(s):
+        read_all(s)
         # leave guild
         print("leave guild")
         s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")

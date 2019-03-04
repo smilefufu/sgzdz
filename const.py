@@ -182,7 +182,6 @@ __EPISODES = ["""
               荆军阻挠 5-6
               智败蒯越 5-7
               趁机突围
-              大战颜良 5-8
               """]
 
 EPISODES = list(item.strip().split("\n") for item in __EPISODES)
