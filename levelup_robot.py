@@ -110,7 +110,7 @@ def read_all(s):
         try:
             pack = read_one(s)
             if not pack:
-                return False
+                return True
             head, body = pack
         except socket.timeout:
             s.settimeout(None)
@@ -303,13 +303,14 @@ def do_guild(s, extra, server_id=20):
 
 
 
-        if not read_all(s):
-            raise BaseException("guild bug occured!")
+        read_all(s):
         # leave guild
         print("leave guild")
         s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
+        read_all(s)
         heart_beat(s)
-        read_one(s)
+        if not read_one(s):
+            raise BaseException("bug guild account")
         return True
 
 
