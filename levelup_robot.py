@@ -22,6 +22,7 @@ headers = {
 
 CARDS = set()
 GOLD_WINE = 0
+CHICKEN = 0
 
 def make_imei():
     return "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
@@ -126,13 +127,15 @@ def read_one(s):
         global GOLD_WINE
         GOLD_WINE = int.from_bytes(body[-4:], byteorder="little")
         print("wine change:", GOLD_WINE)
+    if head == b"\x00\x00\x00\x09" and body.startswith(b"\x01\x00\x20\x83\x00"):  # chicken
+        global CHICKEN
+        CHICKEN = int.from_bytes(body[-4:], byteorder="little")
+        print("chicken change:", CHICKEN)
     return head, body
 
 def battle_episode(s, episode):
     s.sendall(make_battle_data(CARDS, episode))
-    read_all(s)
     s.sendall(make_data("first_battle_end"))
-    read_all(s)
 
 def do_story(s, story):
     print("do story:", story)
@@ -198,9 +201,10 @@ def do_daily(s, extra):
         s.sendall(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
         # guild reward
         s.sendall(b"\x00\x00\x00\x08\x00\x06\x00\x00\x00\x00\xd6\x0e")
-        # get mail rewrd when monday
-        if now.weekday() == 0:
+        # get mail rewrd when friday
+        if now.weekday() == 4:
             s.sendall(b"\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x69")
+            read_all()
         return True
     return False
 
@@ -209,7 +213,7 @@ def heart_beat(s):
 
 def do_guild(s, extra, server_id=20):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
-    if extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
+    if extra.get("guild") != now.strftime("%Y-%m-%d"):
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
         # join
@@ -380,12 +384,28 @@ if __name__ == "__main__":
     c.execute("SELECT extra FROM " + table_name + " WHERE email=?", (email, ))
     row = c.fetchone() or [dict()]
     extra = row[0]
+    try:
+        extra = json.loads(extra)
+    except:
+        extra = dict()
 
     device_id = make_imei()
     print("login account:", email)
-    token, user_id = create_account(email, device_id)
-    #token, user_id = login_account(email, device_id)
-    session = login_verify(user_id, token, version=version, server_id=SERVERID)
+    if "token" in extra and "user_id" in extra:
+        token = extra["token"]
+        user_id = extra["user_id"]
+        try:
+            session = login_verify(user_id, token, version=version, server_id=SERVERID)
+        except:
+            #token, user_id = create_account(email, device_id)
+            token, user_id = login_account(email, device_id)
+            session = login_verify(user_id, token, version=version, server_id=SERVERID)
+    else:  # new account
+        token, user_id = create_account(email, device_id)
+        session = login_verify(user_id, token, version=version, server_id=SERVERID)
+    extra["token"] = token
+    extra["user_id"] = user_id
+    update_extra(table_name, email, extra, c)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         s.sendall(make_login_server_data(version, user_id, SERVERID, device_id, session, os="Android OS 6.0.1 / API-23 (V417IR/eng.root.20181010.162559)", phone="Netease MuMu"))
@@ -394,6 +414,11 @@ if __name__ == "__main__":
         print('init:', r)
         read_all(s)
         heart_beat(s)
+        read_one(s)
+        # update info
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
+        c.execute(sql, (r['level'], now, r["role_id"], email))
         c.execute("SELECT extra FROM " + table_name +" WHERE email=?", (email, ))
         row = c.fetchone()
         if row:
@@ -422,6 +447,9 @@ if __name__ == "__main__":
                 os.popen("python quitguild.py {} {} &".format(email, server_id))
                 now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 os.popen("echo {} {} > guild_bug_account.log".format(now, email))
+                now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
+                c.execute(sql, (r['level'], now, r["role_id"], email))
                 exit()
                 pass
             if do_daily(s, extra):
@@ -463,8 +491,4 @@ if __name__ == "__main__":
             print('start shao dang')
             for i in range(10):
                 s.sendall(make_quick_battle_data(chapter, section))
-        # update info
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
-        c.execute(sql, (r['level'], now, r["role_id"], email))
         exit()

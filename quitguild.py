@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import random
 import socket
 import time
@@ -86,7 +87,6 @@ def make_logon_data(version, user_id, imei, session):
     package_data += b'\xac'
     package_data += bytes(session, 'utf8')
     logon_data = len(package_data).to_bytes(4, byteorder='big') + package_data
-    # print(logon_data)
     return logon_data
 
 def read_bytes(s, length):
@@ -109,13 +109,11 @@ def read_all(s):
         try:
             pack = read_one(s)
             if not pack:
-                print("no more pack!")
-                break
+                return True
             head, body = pack
         except socket.timeout:
             s.settimeout(None)
-            print("all data received!")
-            break
+            return True
 
 def read_one(s):
     head = read_bytes(s, 4)
@@ -125,7 +123,6 @@ def read_one(s):
     if head == b"\x00\x00\x00\x09" and body.startswith(b"\x01\x00\x5c\x01\x12"):  # gold wine
         global GOLD_WINE
         GOLD_WINE = int.from_bytes(body[-4:], byteorder="little")
-        print("wine change:", GOLD_WINE)
     return head, body
 
 def battle_episode(s, episode):
@@ -135,7 +132,6 @@ def battle_episode(s, episode):
     read_all(s)
 
 def do_story(s, story):
-    print("do story:", story)
     sp = story.split()
     if len(sp) == 1:
         # no battle, but card is possible
@@ -156,7 +152,6 @@ def do_attend(s, extra=dict()):
     now = datetime.datetime.now().strftime("%Y-%m-%d")
     last_attend_day = extra.get("attend")
     if now != last_attend_day:
-        print("attend")
         s.sendall(b'\x00\x00\x00\x07\x00\x02\x00\x00\x00\x00\xc7')
         extra["attend"] = now
         return True
@@ -178,7 +173,6 @@ def eat_food(s, extra):
         return False
     day = now.strftime("%Y-%m-%d")
     if extra.get(key) != day:
-        print("eat", key)
         s.sendall(data)
         extra[key] = day
         return True
@@ -187,7 +181,6 @@ def eat_food(s, extra):
 def do_daily(s, extra):
     now = datetime.datetime.now()
     if now.hour in (0, 23) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
-        print("do daily")
         extra["daily"] = now.strftime("%Y-%m-%d")
         # 10 times battle
         s.sendall(b"\x00\x00\x00\x08\x00\x02\x00\x00\x00\x00\xd6\x03")
@@ -209,9 +202,8 @@ def heart_beat(s):
 
 def do_guild(s, extra, server_id=20):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
-    if extra.get("guild") != now.strftime("%Y-%m-%d"):  # for testing
+    if extra.get("guild") != now.strftime("%Y-%m-%d-"):
         extra["guild"] = now.strftime("%Y-%m-%d")
-        print("do guild")
         # join
         instructure = GUILD_ID.get(server_id)
         if not instructure:
@@ -262,7 +254,6 @@ def do_guild(s, extra, server_id=20):
             buy_succ = False
             if head == b'\x00\x00\x00\x97':
                 # see shop and buy
-                print("get shop list")
                 tobuy = []
                 for i in range(0, 6):
                     item = body[i*23+4:i*23+4+23]
@@ -272,7 +263,6 @@ def do_guild(s, extra, server_id=20):
                     if currency == 1 or (currency == 14 and price <= 200):
                         tobuy.append(item_id)
                 if len(tobuy) >= 2:
-                    print("buy items")
                     for item in tobuy[:2]:
                         s.sendall(b"\x00\x00\x00\x0f\x00\x0a\x00\x00\x00\x00\x44" + item + b"\x00\x00\x00\x00")
                     # buy reward
@@ -307,8 +297,10 @@ def do_guild(s, extra, server_id=20):
         # leave guild
         print("leave guild")
         s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
+        read_all(s)
         heart_beat(s)
-        read_one(s)
+        if not read_one(s):
+            raise BaseException("bug guild account")
         return True
 
 
@@ -378,18 +370,32 @@ if __name__ == "__main__":
     c.execute("SELECT extra FROM " + table_name + " WHERE email=?", (email, ))
     row = c.fetchone() or [dict()]
     extra = row[0]
+    try:
+        extra = json.loads(extra)
+    except:
+        extra = dict()
 
     device_id = make_imei()
-    print("login account:", email)
-    token, user_id = create_account(email, device_id)
-    #token, user_id = login_account(email, device_id)
-    session = login_verify(user_id, token, version=version, server_id=SERVERID)
+    if "token" in extra and "user_id" in extra:
+        try:
+            token = extra["token"]
+            user_id = extra["user_id"]
+            session = login_verify(user_id, token, version=version, server_id=SERVERID)
+        except:
+            #token, user_id = create_account(email, device_id)
+            token, user_id = login_account(email, device_id)
+            session = login_verify(user_id, token, version=version, server_id=SERVERID)
+    else:  # new account
+        token, user_id = create_account(email, device_id)
+        session = login_verify(user_id, token, version=version, server_id=SERVERID)
+    extra["token"] = token
+    extra["user_id"] = user_id
+    update_extra(table_name, email, extra, c)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         s.sendall(make_login_server_data(version, user_id, SERVERID, device_id, session, os="Android OS 6.0.1 / API-23 (V417IR/eng.root.20181010.162559)", phone="Netease MuMu"))
         head, body = read_one(s)
         r = init_data(body)
-        print('init:', r)
         read_all(s)
         heart_beat(s)
         s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")

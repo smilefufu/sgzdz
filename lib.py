@@ -89,7 +89,7 @@ def user_do(username,imei, passwd='V0\/wJekk6Kk=', proxy=None):
         r = requests.post(url, headers=headers, data=j, proxies=proxies, timeout=5).json()
     else:
         r = requests.post(url, headers=headers, data=j).json()
-    print(r)
+    # print(r)
     return r['uid'], r['token']
 
 def login_verify(user_id, token, version='1.5.60090', proxy=None, server_id=20):
@@ -100,7 +100,7 @@ def login_verify(user_id, token, version='1.5.60090', proxy=None, server_id=20):
         r = requests.get(url, headers=headers, proxies=proxies, timeout=5).json()
     else:
         r = requests.get(url, headers=headers).json()
-    print(r)
+    # print(r)
     return r['session']
 
 def sqlite_init():
@@ -247,7 +247,7 @@ def make_login_server_data(version, user_id, server_id, imei, session, os=None, 
     data += len(_session).to_bytes(1, byteorder='big')
     data += _session
     ret =  len(data).to_bytes(4, byteorder='big') + data
-    print(ret)
+    # print(ret)
     return ret
 
 
