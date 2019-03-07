@@ -327,26 +327,36 @@ def draw_card(s):
 
 
 def achievement_reward(s, extra):
-    if not extra.get("achievement"):
+    if not extra.get("achi"):
         print("do achievement")
         # 乱世英雄 10, 12, 15, 18, 20, 25
         for idx, item in enumerate([10, 12, 15, 18, 20, 25]):
+            print(idx)
             turn = (idx + 22).to_bytes(2, byteorder="big")
             code = (idx + 1).to_bytes(1, byteorder="big")
             s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x01" + code)
         # 南征北战 ch3, ch4
         for idx, item in enumerate(["ch3", "ch4"]):
+            print(idx)
             turn = (idx + 28).to_bytes(2, byteorder="big")
             code = (idx + 1).to_bytes(1, byteorder="big")
             s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x03" + code)
-        extra["achievement"] = True
+        extra["achi"] = True
         return True
 
 def seven_day(s, extra):
     if not extra.get("seven_day"):
+        ct = extra.get("create_time")
+        if ct:
+            create_time = datetime.datetime.strptim(ct, '%Y-%m-%d').date()
+            now = datetime.datetime.now().date()
+            if now - create_time != datetime.timedelta(6):
+                return False
+        print("do 7day")
         extra["seven_day"] = True
         s.sendall(b"\x00\x00\x00\x0f\x00\x26\x00\x00\x00\x01\x01\x01\x00\x00\x00\x01\x00\x00\x00")  # day1 1-1
         s.sendall(b"\x00\x00\x00\x0f\x00\x27\x00\x00\x00\x01\x01\x02\x00\x00\x00\x01\x00\x00\x00")  # day1 1-2
+        s.sendall(b"\x00\x00\x00\x0f\x00\x27\x00\x00\x00\x01\x01\x06\x00\x00\x00\x01\x00\x00\x00")  # day1 1-6 (2-1)
 
         s.sendall(b"\x00\x00\x00\x0f\x00\x28\x00\x00\x00\x01\x01\x01\x00\x00\x00\x02\x00\x00\x00")  # day2 1-1
         s.sendall(b"\x00\x00\x00\x0f\x00\x29\x00\x00\x00\x01\x01\x02\x00\x00\x00\x02\x00\x00\x00")  # day2 1-2
@@ -355,6 +365,8 @@ def seven_day(s, extra):
         s.sendall(b"\x00\x00\x00\x0f\x00\x2b\x00\x00\x00\x01\x01\x02\x00\x00\x00\x03\x00\x00\x00")  # day3 1-2
 
         s.sendall(b"\x00\x00\x00\x0f\x00\x2c\x00\x00\x00\x01\x01\x01\x00\x00\x00\x04\x00\x00\x00")  # day4 1-1
+        s.sendall(b"\x00\x00\x00\x0f\x00\x2c\x00\x00\x00\x01\x01\x02\x00\x00\x00\x04\x00\x00\x00")  # day4 1-1
+
         s.sendall(b"\x00\x00\x00\x0f\x00\x2d\x00\x00\x00\x01\x01\x01\x00\x00\x00\x05\x00\x00\x00")  # day5 1-1
         s.sendall(b"\x00\x00\x00\x0f\x00\x2e\x00\x00\x00\x01\x01\x01\x00\x00\x00\x06\x00\x00\x00")  # day6 1-1
         s.sendall(b"\x00\x00\x00\x0f\x00\x2f\x00\x00\x00\x01\x01\x01\x00\x00\x00\x07\x00\x00\x00")  # day7 1-1
@@ -403,6 +415,7 @@ if __name__ == "__main__":
     else:  # new account
         token, user_id = create_account(email, device_id)
         session = login_verify(user_id, token, version=version, server_id=SERVERID)
+        extra("create_time") = datetime.datetime.now().strftime("%Y-%m-%d)
     extra["token"] = token
     extra["user_id"] = user_id
     update_extra(table_name, email, extra, c)
@@ -465,12 +478,14 @@ if __name__ == "__main__":
             role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
             print('created role:', role_id, name)
 
-        if r["level"] >= 25 and seven_day(s, extra):  # TODO: record create time to decide when to get reward
-            update_extra(table_name, email, extra, c)
-
         # get archivment reward and draw all wine
         if r["level"] >= 25 and achievement_reward(s, extra):
             update_extra(table_name, email, extra, c)
+            head, body = read_one()
+
+        if r["level"] >= 26 and seven_day(s, extra):  # TODO: record create time to decide when to get reward
+            update_extra(table_name, email, extra, c)
+
         read_all(s)
         draw_card(s)
 
