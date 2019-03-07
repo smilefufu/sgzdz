@@ -470,7 +470,6 @@ if __name__ == "__main__":
 
         # get archivment reward and draw all wine
         if r["level"] >= 25 and achievement_reward(s, extra):
-            print(extra)
             update_extra(table_name, email, extra, c)
         read_all(s)
         draw_card(s)
