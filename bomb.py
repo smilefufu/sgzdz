@@ -180,6 +180,6 @@ if __name__ == "__main__":
     idx = 0
     for row in c.fetchall():
         idx += 1
-        guards.append(one(row[0], targets, int(idx/2))
+        guards.append(one(row[0], targets, int(idx/2)))
     loop.run_until_complete(asyncio.gather(*guards, count_down(seconds+40)))
     loop.close()

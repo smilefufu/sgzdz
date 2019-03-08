@@ -331,13 +331,11 @@ def achievement_reward(s, extra):
         print("do achievement")
         # 乱世英雄 10, 12, 15, 18, 20, 25
         for idx, item in enumerate([10, 12, 15, 18, 20, 25]):
-            print(idx)
             turn = (idx + 22).to_bytes(2, byteorder="big")
             code = (idx + 1).to_bytes(1, byteorder="big")
             s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x01" + code)
         # 南征北战 ch3, ch4
         for idx, item in enumerate(["ch3", "ch4"]):
-            print(idx)
             turn = (idx + 28).to_bytes(2, byteorder="big")
             code = (idx + 1).to_bytes(1, byteorder="big")
             s.sendall(b"\x00\x00\x00\x09" + turn + b"\x00\x00\x00\x01\x03\x03" + code)
@@ -415,7 +413,7 @@ if __name__ == "__main__":
     else:  # new account
         token, user_id = create_account(email, device_id)
         session = login_verify(user_id, token, version=version, server_id=SERVERID)
-        extra("create_time") = datetime.datetime.now().strftime("%Y-%m-%d)
+        extra["create_time"] = datetime.datetime.now().strftime("%Y-%m-%d")
     extra["token"] = token
     extra["user_id"] = user_id
     update_extra(table_name, email, extra, c)
@@ -481,7 +479,7 @@ if __name__ == "__main__":
         # get archivment reward and draw all wine
         if r["level"] >= 25 and achievement_reward(s, extra):
             update_extra(table_name, email, extra, c)
-            head, body = read_one()
+            head, body = read_one(s)
 
         if r["level"] >= 26 and seven_day(s, extra):  # TODO: record create time to decide when to get reward
             update_extra(table_name, email, extra, c)
