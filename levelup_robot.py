@@ -454,15 +454,13 @@ if __name__ == "__main__":
             except:
                 # still mark as done when failed
                 update_extra(table_name, email, extra, c)
-                # re-login and quit guild
-                os.popen("python quitguild.py {} {} &".format(email, server_id))
-                now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                os.popen("echo {} {} > guild_bug_account.log".format(now, email))
                 now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
                 c.execute(sql, (r['level'], now, r["role_id"], email))
+                # re-login and quit guild
+                os.popen("python quitguild.py {} {} &".format(email, server_id))
+                os.popen("echo {} {} > guild_bug_account.log &".format(now, email))
                 exit()
-                pass
             if do_daily(s, extra):
                 update_extra(table_name, email, extra, c)
             if do_attend(s, extra):
