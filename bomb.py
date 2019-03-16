@@ -37,7 +37,7 @@ async def user_do(username, imei, passwd='V0\/wJekk6Kk=', proxy=None):
             assert r["code"] == 100
     return r['uid'], r['token']
 
-async def login_verify(user_id, token, version='1.5.60090', proxy=None):
+async def login_verify(user_id, token, version='1.6.61095', proxy=None):
     # return tcp session
     url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
     async with aiohttp.ClientSession() as session:
@@ -56,7 +56,7 @@ async def one(email, targets, wait=0):
     """maintance one bomb sender"""
     proxies = get_proxies()
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-    version = "1.5.60090"
+    version = "1.6.61095"
     uid, token, session = None, None, None
     session_manager = Session(email)
     while True:
@@ -180,6 +180,6 @@ if __name__ == "__main__":
     idx = 0
     for row in c.fetchall():
         idx += 1
-        guards.append(one(row[0], targets, int(idx/2)))
+        guards.append(one(row[0], targets, int(idx/8)))
     loop.run_until_complete(asyncio.gather(*guards, count_down(seconds+40)))
     loop.close()

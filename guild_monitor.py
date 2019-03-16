@@ -9,7 +9,7 @@ import  asyncio
 
 from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target, body_test
 
-version = '1.5.60090'
+version = '1.6.61095'
 imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
 email = "fufu6@meirishentie.com" if len(sys.argv) == 1 else sys.argv[1]
 user_id, token = user_do(email, imei, passwd="+KB9SfNXlNQ=")

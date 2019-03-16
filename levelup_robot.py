@@ -382,7 +382,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     email = args.email
     server_id = args.server_id
-    version = '1.5.60090'
+    version = '1.6.61095'
 
     server = SERVER_LIST[server_id]
     SERVERID, HOST, PORT = server
