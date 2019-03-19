@@ -166,10 +166,10 @@ async def count_down(sec):
     exit()
 
 if __name__ == "__main__":
-    print(sys.argv)
+    exit()
     target_ids, seconds = sys.argv[1:]
     targets = list(map(int, target_ids.split(",")))
-    seconds = int(seconds)
+    seconds = int(int(seconds)/2)
     print(targets, seconds)
     loop = asyncio.get_event_loop()
     guards = []
