@@ -390,6 +390,7 @@ if __name__ == "__main__":
         heart_beat(s)
         read_one(s)
         cards = r['cards']
+        CARDS.update(cards)
         if not "name" in r:
             # need create role
             role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
