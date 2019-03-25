@@ -92,6 +92,9 @@ async def read_packages():
     buf = b""
     bn_pool = set()
     pool_time = time.time()
+    conn = sqlite3.connect("data.db")
+    conn.isolation_level = None   # auto commit
+    c = conn.cursor()
     while True:
 
         # read one full package
@@ -142,7 +145,10 @@ async def read_packages():
                 tmp[role_id] = dict(name=name, model=model_id, level=level, vip=vip, atk=atk, guild=guild)
                 print(role_id, is_gyn(role_id), tmp[role_id])
                 if is_gyn(role_id):
-                    os.system('echo \'REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES ("{}", {}, {}, {}, {}, {});\' | sqlite3 data.db'.format(name, level, role_id, model_id, atk, vip))
+                    c.execute("SELECT * FROM pigs_20 WHERE role_id=?", (role_id, ))
+                    if not c.fetchone():
+                        # not myself
+                        c.execute("REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES (?,?,?,?,?,?)", (name, level, role_id, model_id, atk, vip))
             except:
                 print(traceback.format_exc())
         # print("head:", head)
