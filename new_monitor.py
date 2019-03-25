@@ -141,7 +141,8 @@ async def read_packages():
                 guild = None if guild_len == 0 else body[30+name_len:].decode('utf8')
                 tmp[role_id] = dict(name=name, model=model_id, level=level, vip=vip, atk=atk, guild=guild)
                 print(role_id, is_gyn(role_id), tmp[role_id])
-                os.system('echo REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES ("{}", {}, {}, {}, {}, {}); | sqlite3 data.db'.format(name, level, role_id, model_id, atk, vip))
+                if is_gyn(role_id):
+                    os.system('echo \'REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES ("{}", {}, {}, {}, {}, {});\' | sqlite3 data.db'.format(name, level, role_id, model_id, atk, vip))
             except:
                 print(traceback.format_exc())
         # print("head:", head)
