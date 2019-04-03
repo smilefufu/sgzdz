@@ -1,152 +1,244 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import random
-import datetime
+import asyncio
 import socket
-import time
+import sqlite3
+import json
 import sys
-import os
-import  asyncio
+import datetime
+import traceback
 
-from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target
+import aiohttp
+import requests
 
-version = '1.6.61095'
-imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-email = sys.argv[1]
-user_id, token = user_do(email, imei)
-session = login_verify(user_id, token, version)
+import socks
+from lib import make_logon_data, init_data, decode_players
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
+}
 
-def make_logon_data():
-    package_data = b'\x09'
-    package_data += bytes(version, 'utf8')
-    package_data += b'\x14\x00\x04\x00\x07'
-    package_data += b'a8_card'
-    package_data += b'\x00\x20'
-    package_data += bytes(user_id, 'utf8')
-    package_data += b'\x0f'
-    package_data += bytes(imei+';Android OS 9.0.1 / API-28 (V417IR/eng.root.20181010.162559)', 'utf8')
-    package_data += b'\x0c'
-    package_data += b'HuaweiMate20@'
-    package_data += b'\xac'
-    package_data += bytes(session, 'utf8')
-    logon_data = len(package_data).to_bytes(4, byteorder='big') + package_data
-    # print(logon_data)
-    return logon_data
+accounts = [
+    dict(email="guyuena001@gmail.com", role_id=357635, name='祁國偉', status="offline"),
+    dict(email="guyuena002@gmail.com", role_id=358815, name='2囧2'),
+    dict(email="guyuena003@gmail.com", role_id=358820, name='iPhone'),
+    dict(email="guyuena004@gmail.com"),
+    dict(email="guyuena005@gmail.com"),
+    dict(email="guyuena006@gmail.com"),
+    dict(email="guyuena007@gmail.com"),
+    dict(email="guyuena008@gmail.com"),
+    dict(email="guyuena009@gmail.com"),
+    dict(email="guyuena010@gmail.com"),
+    dict(email="guyuena011@gmail.com"),
+    dict(email="guyuena012@gmail.com"),
+    dict(email="guyuena013@gmail.com"),
+    dict(email="guyuena014@gmail.com"),
+    dict(email="guyuena015@gmail.com"),
+    dict(email="guyuena016@gmail.com"),
+    dict(email="guyuena017@gmail.com"),
+    dict(email="guyuena018@gmail.com"),
+    dict(email="guyuena019@gmail.com"),
+    dict(email="guyuena020@gmail.com"),
+]
 
+tmp = dict()
 
-def package_reader(s):
-    buf = b""
-    len_need = 4
-    ret = []
+def is_gyn(role_id):
+    info = tmp.get(role_id, None)
+    if not info:
+        print("no detail info!")
+        return False
+    else:
+        if info["level"]>=30 and info["model"] == 5 and info["atk"]<25000:
+            return True
+    return False
+
+def get_proxies2():
+    proxies = requests.get("https://proxy.ishield.cn/?types=0&count={}".format(300)).json()
+    proxies += requests.get("https://proxy.ishield.cn/?types=1&count={}".format(300)).json()
+    return set("{} {}".format(proxy[0], proxy[1]) for proxy in proxies)
+
+async def user_do(username, imei, passwd='V0\/wJekk6Kk=', proxy=None):
+    # return user_id and session for login_verify api
+    version = 'Android1.0.1'
+    tpl = '{"uid":"","token":"","uName":"%s","nickName":"","password":"%s","version":"%s","imei":"%s","authCode":"","flag":1,"isfast":"0","thirdType":1,"thirdToken":"","thirdUid":"","fbBusinessToken":"","language":"Cn","appKey":"76749c0621384a96b744ccb089567bcf"}'
+    j = tpl % (username, passwd, version, imei)
+    url = 'http://haiwaitest.3333.cn:8008/sdk/user/user.do'
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=j, headers=headers, proxy=proxy, timeout=3) as resp:
+            t = await resp.text()
+            r = json.loads(t)
+            assert r["code"] == 100
+    return r['uid'], r['token']
+
+async def login_verify(user_id, token, version='1.6.61095', proxy=None):
+    # return tcp session
+    url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers, proxy=proxy, timeout=5) as resp:
+            t = await resp.text()
+            r = json.loads(t)
+    return r['session']
+
+def char_gen():
+    blocks = [15708544, 15708800, 15709056, 15709312]
+    random.shuffle(blocks)
+    char = random.randint(blocks[0], blocks[0] + 63).to_bytes(3, byteorder="big")
+    return char
+
+async def heartbeat(writer):
     while True:
-        if len(ret) == 0:  # get head first
-            len_need = 4
-        elif len(ret) == 1:
-            head = ret[0]
-            len_need = int.from_bytes(head, byteorder='big')
-        else:
-            data = dict(head=ret[0], body=ret[1])
-            ret = []
-            yield data
-        while len(buf) < len_need:
-            r = s.recv(1400)
-            if not r:
-                raise BaseException("get null data!!!")
-            buf += r
-        ret.append(buf[:len_need])
-        buf = buf[len_need:]
-
-async def send_heart_beat():
-    global writer
-    while not writer:
-        print("wait writer")
-        await asyncio.sleep(1)
-    sent_logon = False
-    while True:
-        writer.write(b'\x00\x00\x00\x02\x01\x00')  # heartbeat?
-        if not sent_logon:
-            print("sending `get on screen players`")
-            writer.write(b'\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x07')    # seems like 2 cmd, each len is 7, read on screen players?  00 00 00 00 00 00 05 and 00 00 00 00 00 00 07
-            sent_logon = True
         await asyncio.sleep(10)
+        try:
+            writer.write(b'\x00\x00\x00\x02\x01\x00')
+            await writer.drain()
+        except:
+            print(traceback.format_exc())
+            return
 
-
-async def read_packages():
-    global reader
-    while not reader:
-        print("wait reader")
-        await asyncio.sleep(1)
+async def read_bytes(reader, length):
     buf = b""
-    bn_pool = set()
-    pool_time = time.time()
-    while True:
+    while len(buf) < length:
+        d = await reader.read(length - len(buf))
+        if not d:
+            raise BaseException("get null data!!!")
+        buf += d
+    return buf
 
-        # read one full package
-        len_need = 4
-        ret = []
+async def read_one(reader):
+    # read and process packages
+    head = await read_bytes(reader, 4)
+    body = await read_bytes(reader, int.from_bytes(head, byteorder="big"))
+    return head, body
+
+
+async def one(loop, email):
+    """maintance one account"""
+    conn = sqlite3.connect("data.db")
+    conn.isolation_level = None   # auto commit
+    c = conn.cursor()
+    imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
+    version = "1.6.61095"
+    for account in accounts:
+        if account["email"] == email:
+            account["status"] = "online"
+            break
+    uid = account.get("uid", None)
+    token = account.get("token", None)
+    print("starting:", email)
+    try:
+        if not uid or not token:
+            uid, token = await user_do(email, imei)
+        try:
+            session = await login_verify(uid, token, version=version)
+        except:
+            print("saved uid,token is expired")
+            uid, token = await user_do(email, imei)
+            session = await login_verify(uid, token, version=version)
+
+        fut = asyncio.open_connection('128.14.230.246', 30000)
+        reader, writer = await asyncio.wait_for(fut, timeout=3)
+        writer.write(make_logon_data(version, uid, imei, session))
+        head, body = await read_one(reader)
+        r = init_data(body)
+        print(email, r)
+        account["role_id"] = r["role_id"]
+
+        writer.write(b'\x00\x00\x00\x02\x01\x00')
+        writer.write(b'\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x07')
+        writer.write(b'\x00\x00\x00\x0e\x01\x01\x9f\x79\x05\x00\xf0\x1c\xf6\xc1\xab\x77\xd1\x41')
+        asyncio.ensure_future(heartbeat(writer), loop=loop)
+        need_check = True
         while True:
-            if len(ret) == 0:  # get head first
-                len_need = 4
-            elif len(ret) == 1:
-                head = ret[0]
-                len_need = int.from_bytes(head, byteorder='big')
-            else:
-                head, body = ret
-                break
-            while len(buf) < len_need:
-                r = await reader.read(1400)
-                if not r:
-                    raise BaseException("get null data!!!")
-                buf += r
-            ret.append(buf[:len_need])
-            buf = buf[len_need:]
+            head, body = await read_one(reader)
+            players = decode_players(body)
+            now = "[{}]".format(datetime.datetime.now().strftime("%Y-%m-%d %T"))
+            if players:
 
-        if head in (b'\x00\x00\x00\x0f',  b'\x00\x00\x00\x03', b'\x00\x00\x00\x07'):
-            # print('other players move instruction')
-            if head == b'\x00\x00\x00\x07' and body.startswith(b'\x01\x00\x1b'):
+                if len(players) > 1:
+                    # check whether entered in same district
+                    print(accounts)
+                    online_role_id = [x["role_id"] for x in accounts if x.get("status") == "online"]
+                    for player in players:
+                        name, level, gender, role_id = player
+                        if r["role_id"] != role_id and role_id in online_role_id:
+                            # can see other monitor account
+                            # close and quit
+                            writer.close()
+                            account["status"] = "offline"
+                            print("same area, offline!", role_id)
+                            return
+
+                    # start do things with server
+                    for player in players:
+                        name, level, gender, role_id = player
+                        if role_id not in tmp:
+                            # read detail
+                            writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
+                elif len(players) == 1:
+                    name, level, gender, role_id = players[0]
+                    info = tmp.get(role_id, None)
+                    if info:
+                        print(now, role_id, info["name"], "is online")
+                    else:
+                        print(now, role_id, "online")
+            elif head == b'\x00\x00\x00\x07' and body.startswith(b'\x01\x00\x1b'):
                 role_id = int.from_bytes(body[-4:], byteorder="little")
-                print(role_id, "offline")
-                shl = 'curl "localhost:7788/offline?role_id={}" 1>>/dev/null 2>>/dev/null &'.format(role_id)
-                os.popen(shl)
-            continue
-        # print("head:", head)
-        # if int.from_bytes(head, byteorder='big') < 640000:
-            # print("body:", body)
-        readable_string = decode_readable_string(body)
-        # print(readable_string)
-        # names = find_names(readable_string)
-        names = decode_players(body)
-        if names:
-            print(datetime.datetime.now(), names)
-            for n in names:
-                name, level, gender, role_id = n
-                if level >= 20:
-                    print(datetime.datetime.now(), n)
-                    shell = 'curl "localhost:7788/online?name={}&level={}&gender={}&role_id={}" 1>>/dev/null 2>>/dev/null &'.format(name, level, gender, role_id)
-                    os.popen(shell)
+                info = tmp.get(role_id, None)
+                if info:
+                    print(now, role_id, info["name"], "is offline")
+                else:
+                    print(now, role_id, "offline")
+            elif body.startswith(b"\x00\x81\x00\x00\x00\x00"):
+                # click player return pack
+                try:
+                    role_id = int.from_bytes(body[6:10], byteorder="little")
+                    name_len = body[12]
+                    name = body[13:13+name_len].decode("utf8")
+                    model_id = body[13+name_len]
+                    level = body[14+name_len]
+                    vip = body[15+name_len]
+                    atk = int.from_bytes(body[16+name_len: 20+name_len], byteorder='little')
+                    guild_len = body[29+name_len]
+                    guild = None if guild_len == 0 else body[30+name_len:].decode('utf8')
+                    tmp[role_id] = dict(name=name, model=model_id, level=level, vip=vip, atk=atk, guild=guild)
+                    print(now, role_id, is_gyn(role_id), tmp[role_id])
+                    if is_gyn(role_id):
+                        c.execute("SELECT * FROM pigs_20 WHERE role_id=?", (role_id, ))
+                        if not c.fetchone():
+                            # not myself
+                            c.execute("REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES (?,?,?,?,?,?)", (name, level, role_id, model_id, atk, vip))
+                except:
+                    print(traceback.format_exc())
+
+    except BrokenPipeError:
+        print("???", traceback.format_exc())
+    except:
+        print("wtf!!!!", traceback.format_exc())
+    finally:
+        account["status"] = "offline"
 
 
-reader, writer = None, None
-
-async def init_connection():
-    global reader
-    global writer
-    reader, writer = await asyncio.open_connection('128.14.230.246', 30000)
-    writer.write(make_logon_data())
+async def dispatcher(loop, interval=15*60):
+    email = accounts[0]["email"]
+    asyncio.ensure_future(one(loop, email), loop=loop)
+    while True:
+        await asyncio.sleep(interval)
+        new_email = None
+        for m in accounts:
+            if m.get("status") != "online":
+                new_email = m["email"]
+                break
+        asyncio.ensure_future(one(loop, new_email), loop=loop)
+        print("now online accounts:", [x for x in accounts if x.get("status") == "online"])
 
 
 if __name__ == "__main__":
-    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # connect to server 20
-    # s.connect(('128.14.230.246', 30000))
-
+    #target_ids, seconds = sys.argv[1:]
+    #targets = list(map(int, target_ids.split(",")))
+    #seconds = int(int(seconds)/2)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        init_connection(),
-        read_packages(),
-        send_heart_beat(),
-    ))
+    loop.run_until_complete(dispatcher(loop))
     loop.close()
-
-
