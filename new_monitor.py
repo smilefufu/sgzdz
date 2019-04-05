@@ -8,6 +8,7 @@ import sys
 import os
 import  asyncio
 import traceback
+import sqlite3
 
 from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target
 
@@ -25,7 +26,7 @@ def is_gyn(role_id):
         print("no detail info!")
         return False
     else:
-        if info["level"]>=30 and info["model"] == 5 and info["atk"]<25000:
+        if info["level"]>=30 and info["model"] == 5 and info["atk"]<30000 and info["vip"] < 4:
             return True
     return False
 

@@ -27,7 +27,7 @@ if __name__ == "__main__":
     c = conn.cursor()
     table_name = 'pigs_{}'.format(args.server_id)
 
-    MAX_ONLINE_COUNT = 10
+    MAX_ONLINE_COUNT = 12
 
     if args.op == "add":
         # sql connection
@@ -36,15 +36,20 @@ if __name__ == "__main__":
     elif args.op == "levelup":
         while True:
             now = datetime.datetime.now()
+            if now.weekday() == 3 and now.hour == 9: # maintance time
+                print("EXIT FOR MAINTANCE!")
+                exit()
             cnt = count_robot(args.server_id)
             log("now robot:", cnt)
-            if cnt < MAX_ONLINE_COUNT - 3:
-                sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-480 minute', 'localtime')) and email not like 'adorable%' ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
+            if cnt < MAX_ONLINE_COUNT - 4:
+                sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) and email not like 'adorable%' ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
+                sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                 log(sql)
                 c.execute(sql)
                 rows = c.fetchall()
                 now = datetime.datetime.now()
-                if not rows and now.hour in (5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 18, 19, 21, 22):
+                if not rows and now.hour in (2, 3, 4, 5, 6, 12, 13, 15, 18, 19, 21, 22):
+                    sql = "SELECT email FROM {} WHERE email not like 'adorable%' ORDER BY last_login DESC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     sql = "SELECT email FROM {} ORDER BY last_login DESC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     log(sql)
                     c.execute(sql)

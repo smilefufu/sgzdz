@@ -6,6 +6,7 @@ import sys
 #sys.setdefaultencoding("utf-8")
 import tornado.ioloop
 import tornado.web
+from tornado.options import parse_command_line
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -33,6 +34,7 @@ def make_app():
     ])
 
 if __name__ == "__main__":
+    parse_command_line()
     app = make_app()
     app.listen(8081)
     tornado.ioloop.IOLoop.current().start()
