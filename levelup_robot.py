@@ -213,7 +213,7 @@ def heart_beat(s):
 
 def do_guild(s, extra, server_id=20):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
-    if extra.get("guild") != now.strftime("%Y-%m-%d"):
+    if extra.get("guild") != now.strftime("%Y-%m-%d") and now.hour not in (12, 13, 20, 21, 22, 23):
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
         # join
@@ -418,6 +418,7 @@ if __name__ == "__main__":
     extra["user_id"] = user_id
     update_extra(table_name, email, extra, c)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        print(HOST,PORT)
         s.connect((HOST, PORT))
         s.sendall(make_login_server_data(version, user_id, SERVERID, device_id, session, os="Android OS 6.0.1 / API-23 (V417IR/eng.root.20181010.162559)", phone="Netease MuMu"))
         head, body = read_one(s)
@@ -459,7 +460,7 @@ if __name__ == "__main__":
                 c.execute(sql, (r['level'], now, r["role_id"], email))
                 # re-login and quit guild
                 os.popen("python quitguild.py {} {} &".format(email, server_id))
-                os.popen("echo {} {} > guild_bug_account.log &".format(now, email))
+                # os.popen("echo {} {} > guild_bug_account.log &".format(now, email))
                 exit()
             if do_daily(s, extra):
                 update_extra(table_name, email, extra, c)
