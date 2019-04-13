@@ -346,7 +346,7 @@ def seven_day(s, extra):
     if not extra.get("seven_day"):
         ct = extra.get("create_time")
         if ct:
-            create_time = datetime.datetime.strptim(ct, '%Y-%m-%d').date()
+            create_time = datetime.datetime.strptime(ct, '%Y-%m-%d').date()
             now = datetime.datetime.now().date()
             if now - create_time != datetime.timedelta(6):
                 return False

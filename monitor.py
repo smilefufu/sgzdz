@@ -53,6 +53,10 @@ def is_gyn(role_id):
     else:
         if info["level"]>=30 and info["model"] == 5 and info["atk"]<25000:
             return True
+        if info["level"]>=35 and info["vip"] < 3 and info["atk"] < 40000:
+            return True
+        if info["name"].isdigit() and info["name"][:2] in ("19", "20"):
+            return True
     return False
 
 def get_proxies2():
@@ -138,7 +142,7 @@ async def one(loop, email):
             uid, token = await user_do(email, imei)
             session = await login_verify(uid, token, version=version)
 
-        fut = asyncio.open_connection('128.14.230.246', 30000)
+        fut = asyncio.open_connection('128.14.236.49', 30000)
         reader, writer = await asyncio.wait_for(fut, timeout=3)
         writer.write(make_logon_data(version, uid, imei, session))
         head, body = await read_one(reader)
@@ -212,6 +216,7 @@ async def one(loop, email):
                             c.execute("REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES (?,?,?,?,?,?)", (name, level, role_id, model_id, atk, vip))
                 except:
                     print(traceback.format_exc())
+            sys.stdout.flush()
 
     except BrokenPipeError:
         print("???", traceback.format_exc())

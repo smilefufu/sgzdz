@@ -84,7 +84,7 @@ async def one(email, targets, wait=0):
                 session_manager.update_session(email, uid, token, '')
                 session = await login_verify(uid, token, version=version)
 
-            fut = asyncio.open_connection('128.14.230.246', 30000)
+            fut = asyncio.open_connection('128.14.236.49', 30000)
             reader, writer = await asyncio.wait_for(fut, timeout=3)
             writer.write(make_logon_data(version, uid, imei, session))
             head = await reader.read(4)
