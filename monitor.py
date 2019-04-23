@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import random
 import asyncio
 import socket
@@ -160,7 +161,6 @@ async def one(loop, email):
             players = decode_players(body)
             now = "[{}]".format(datetime.datetime.now().strftime("%Y-%m-%d %T"))
             if players:
-
                 if len(players) > 1:
                     # check whether entered in same district
                     print(accounts)
@@ -186,14 +186,24 @@ async def one(loop, email):
                     info = tmp.get(role_id, None)
                     if info:
                         print(now, role_id, info["name"], "is online")
+                        if tmp.get("gyn_status", None):
+                            os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
                     else:
+                        # not info, check database?
                         print(now, role_id, "online")
+                        # TODO: if face a hard drive io performance problem, common the query below
+                        c.execute("SELECT * FROM sbs WHERE role_id=?", (role_id, ))
+                        if c.fetchone():
+                            os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
                         writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
             elif head == b'\x00\x00\x00\x07' and body.startswith(b'\x01\x00\x1b'):
+                # offline
                 role_id = int.from_bytes(body[-4:], byteorder="little")
                 info = tmp.get(role_id, None)
                 if info:
                     print(now, role_id, info["name"], "is offline")
+                    if tmp.get("gyn_status", None):
+                        os.system("curl http://localhost:7788/target_offline?role_id={} &".format(role_id))
                 else:
                     print(now, role_id, "offline")
             elif body.startswith(b"\x00\x81\x00\x00\x00\x00"):
@@ -209,12 +219,15 @@ async def one(loop, email):
                     guild_len = body[29+name_len]
                     guild = None if guild_len == 0 else body[30+name_len:].decode('utf8')
                     tmp[role_id] = dict(name=name, model=model_id, level=level, vip=vip, atk=atk, guild=guild)
-                    if is_gyn(role_id):
+                    gyn_status = is_gyn(role_id)
+                    if gyn_status:
                         c.execute("SELECT * FROM pigs_20 WHERE role_id=?", (role_id, ))
                         if not c.fetchone():
                             # not myself
+                            os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
                             c.execute("REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES (?,?,?,?,?,?)", (name, level, role_id, model_id, atk, vip))
-                            print(now, role_id, is_gyn(role_id), tmp[role_id])
+                            tmp["gyn_status"] = gyn_status
+                            print(now, role_id, gyn_status, tmp[role_id])
                         else:
                             print(now, role_id, "self", tmp[role_id])
                     else:
