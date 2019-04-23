@@ -12,7 +12,7 @@ import sqlite3
 
 from lib import user_do, login_verify, decode_readable_string, find_names, decode_players, save_names, record_player, is_target
 
-version = '1.6.61095'
+version = '1.7.61848'
 imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
 email = sys.argv[1]
 user_id, token = user_do(email, imei)

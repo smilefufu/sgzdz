@@ -55,7 +55,7 @@ def is_gyn(role_id):
             return True
         if info["level"]>=35 and info["vip"] < 3 and info["atk"] < 40000:
             return True
-        if info["name"].isdigit() and info["name"][:2] in ("19", "20"):
+        if info["name"].isdigit() and (info["name"][:2] in ("18", "19", "20", "21") or len(info["name"]) == 4):
             return True
     return False
 
@@ -77,7 +77,7 @@ async def user_do(username, imei, passwd='V0\/wJekk6Kk=', proxy=None):
             assert r["code"] == 100
     return r['uid'], r['token']
 
-async def login_verify(user_id, token, version='1.6.61095', proxy=None):
+async def login_verify(user_id, token, version='1.7.61848', proxy=None):
     # return tcp session
     url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
     async with aiohttp.ClientSession() as session:
@@ -124,7 +124,7 @@ async def one(loop, email):
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-    version = "1.6.61095"
+    version = "1.7.61848"
     for account in accounts:
         if account["email"] == email:
             account["status"] = "online"
@@ -188,6 +188,7 @@ async def one(loop, email):
                         print(now, role_id, info["name"], "is online")
                     else:
                         print(now, role_id, "online")
+                        writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
             elif head == b'\x00\x00\x00\x07' and body.startswith(b'\x01\x00\x1b'):
                 role_id = int.from_bytes(body[-4:], byteorder="little")
                 info = tmp.get(role_id, None)
@@ -208,12 +209,17 @@ async def one(loop, email):
                     guild_len = body[29+name_len]
                     guild = None if guild_len == 0 else body[30+name_len:].decode('utf8')
                     tmp[role_id] = dict(name=name, model=model_id, level=level, vip=vip, atk=atk, guild=guild)
-                    print(now, role_id, is_gyn(role_id), tmp[role_id])
                     if is_gyn(role_id):
                         c.execute("SELECT * FROM pigs_20 WHERE role_id=?", (role_id, ))
                         if not c.fetchone():
                             # not myself
                             c.execute("REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES (?,?,?,?,?,?)", (name, level, role_id, model_id, atk, vip))
+                            print(now, role_id, is_gyn(role_id), tmp[role_id])
+                        else:
+                            print(now, role_id, "self", tmp[role_id])
+                    else:
+                        print(now, role_id, is_gyn(role_id), tmp[role_id])
+                        pass
                 except:
                     print(traceback.format_exc())
             sys.stdout.flush()
