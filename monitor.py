@@ -15,7 +15,7 @@ import aiohttp
 import requests
 
 import socks
-from lib import make_logon_data, init_data, decode_players
+from lib import make_logon_data, init_data, decode_players, is_target
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -52,12 +52,19 @@ def is_gyn(role_id):
         print("no detail info!")
         return False
     else:
-        if info["level"]>=30 and info["model"] == 5 and info["atk"]<25000:
+        if info["level"]>=30 and info["model"] == 5 and info["atk"]< 25000:
             return True
-        if info["level"]>=35 and info["vip"] < 3 and info["atk"] < 40000:
+        if info["level"]>=30 and info["model"] == 4 and info["atk"]< 25000:
             return True
-        if info["name"].isdigit() and (info["name"][:2] in ("18", "19", "20", "21") or len(info["name"]) == 4):
+        if info["level"]>=30 and info["vip"] < 3 and info["atk"] < 40000:
             return True
+        if info["level"]>=40 and info["vip"] < 3 and info["atk"] < 60000:
+            return True
+        if info["name"].isdigit() and info["name"][:2] in ("19", "20", "21"):
+            return True
+        if info["guild"] in BAD_GUILD and info["level"] < 50:
+            #return True
+            pass
     return False
 
 def get_proxies2():
@@ -192,8 +199,7 @@ async def one(loop, email):
                         # not info, check database?
                         print(now, role_id, "online")
                         # TODO: if face a hard drive io performance problem, common the query below
-                        c.execute("SELECT * FROM sbs WHERE role_id=?", (role_id, ))
-                        if c.fetchone():
+                        if is_target(role_id):
                             os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
                         writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
             elif head == b'\x00\x00\x00\x07' and body.startswith(b'\x01\x00\x1b'):

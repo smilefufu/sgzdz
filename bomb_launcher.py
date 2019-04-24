@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sqlite3
 import time
 import os
 import logging
@@ -23,6 +24,18 @@ bomb_pool = dict()
 async def status(request):
     return web.Response(text=json.dumps(bomb_pool))
 
+
+@routes.get('/detail')
+async def status(request):
+    if bomb_pool:
+        conn = sqlite3.connect("data.db")
+        conn.isolation_level = None   # auto commit
+        c = conn.cursor()
+        c.execute("SELECT role_id, name, level, atk FROM sbs WHERE role_id in ({})".format(",".join(str(k) for k in bomb_pool.keys())))
+        players = ["{}, {}, {}级，战力{}".format(*i) for i in c.fetchall()]
+    else:
+        players = []
+    return web.Response(text="\n".join(players))
 
 @routes.get('/target_online')
 async def online(request):

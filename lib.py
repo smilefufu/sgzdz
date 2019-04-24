@@ -347,6 +347,9 @@ class Session():
 def is_target(role_id):
     if role_id in range(348110, 348120):
         return True
+    if role_id == 340780:
+        # IU
+        return True
     if role_id == 347110:
         # guyuena
         return True
@@ -356,14 +359,8 @@ def is_target(role_id):
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None
     c = conn.cursor()
-    c.execute("SELECT * FROM sbs WHERE role_id=?", (role_id, ))
+    c.execute("SELECT rowid FROM sbs WHERE role_id=?", (role_id, ))
     if c.fetchone():
-        c.close()
-        conn.close()
-        return True
-    c.execute("SELECT name FROM all_players where role_id=?", (role_id, ))
-    r = c.fetchone()
-    if r and r[0].isdigit() and int(r[0]) < 3000:
         c.close()
         conn.close()
         return True
