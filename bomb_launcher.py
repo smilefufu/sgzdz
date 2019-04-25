@@ -86,6 +86,35 @@ async def websocket_handler(request):
 
     return ws
 
+@routes.get('/attack')
+async def attack(request):
+    is_on = os.popen("ps aux | grep new_bomb.py | grep -v grep").read()
+    if is_on:
+        html = "<h1>attack is on</h1>"
+    else:
+        html = """
+        <h1>
+        <a href='/bomb'>bomb!</a>
+        </h1>
+        """
+    return web.Response(body=html, headers={'Content-Type': "text/html; charset=utf-8"})
+
+@routes.get('/bomb')
+async def bomb(request):
+    ref = request.headers.getall('Referer', [])
+    host = request.headers.getall('Host', [])
+    if ref and host[0] in ref[0]:
+        # from my page
+        is_on = os.popen("ps aux | grep new_bomb.py | grep -v grep").read()
+        if not is_on:
+            # not on yet
+            os.system("pipenv run python new_bomb.py 1>bomb_auto.log 2>bomb_auto.log &")
+            raise web.HTTPFound('/attack')
+        else:
+            return web.Response(text="attack is on")
+    else:
+        return web.Response(text="unauthorized access!")
+
 
 app = web.Application()
 app.add_routes(routes)
