@@ -67,6 +67,7 @@ async def heartbeat(writer):
 
 async def ws_updater():
     global pool
+    await asyncio.sleep(10)
     async with aiohttp.ClientSession() as session:
         while True:
             try:
@@ -109,14 +110,14 @@ async def one(loop, email, wait=0):
     if wait:
         await asyncio.sleep(wait)
     while True:
-        print("start:", email)
+        # print("start:", email)
         try:
             if not uid or not token:
                 uid, token = await user_do(email, imei)
             try:
                 session = await login_verify(uid, token, version=version)
             except:
-                print("saved uid,token is expired")
+                # print("saved uid,token is expired")
                 uid, token = await user_do(email, imei)
                 session = await login_verify(uid, token, version=version)
 
@@ -125,22 +126,21 @@ async def one(loop, email, wait=0):
             writer.write(make_logon_data(version, uid, imei, session))
             head, body = await read_one(reader)
             r = init_data(body)
-            print(r)
+            # print(r)
             writer.write(b'\x00\x00\x00\x02\x01\x00')
             writer.write(b'\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x07')
             asyncio.ensure_future(heartbeat(writer), loop=loop)
-            asyncio.ensure_future(ws_updater(), loop=loop)
             bomb_times = 0
             bomb_record = dict()
             while True:
                 i = 0
-                threshold = 17
+                threshold = 15
                 for receiver, t in pool.items():
                     now = time.time()
                     last_bomb_time = bomb_record.get(receiver, None)
                     if last_bomb_time and now - last_bomb_time < threshold:
                         # just bombed, skip this one
-                        print("bombed !!!", now, last_bomb_time)
+                        # print("bombed !!!", now, last_bomb_time)
                         continue
                     i += 1
                     await bomb_once(writer, receiver)
@@ -150,8 +150,8 @@ async def one(loop, email, wait=0):
                     await bomb_once(writer, receiver)
                     bomb_record[receiver] = now
                 # now everyone in pool has been bombed recently
-                if i:
-                    print(i, "in pool has been bombed. Total", len(pool))
+                #if i:
+                #    print(i, "in pool has been bombed. Total", len(pool))
                 await asyncio.sleep(1)
         except BrokenPipeError:
             import traceback
@@ -160,6 +160,8 @@ async def one(loop, email, wait=0):
         except:
             import traceback
             print("wtf!!!!", traceback.format_exc())
+            await asyncio.sleep(5)
+            continue
 
 
 async def bomb_once(writer, target_id):
@@ -187,6 +189,7 @@ if __name__ == "__main__":
     for row in c.fetchall():
         idx += 1
         email = row[0]
-        guards.append(one(loop, email, 0))
+        guards.append(one(loop, email, idx%6))
+    guards += [ws_updater()]
     loop.run_until_complete(asyncio.gather(*guards))
     loop.close()
