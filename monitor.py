@@ -16,6 +16,7 @@ import requests
 
 import socks
 from lib import make_logon_data, init_data, decode_players, is_target
+from const import BAD_GUILD
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -47,6 +48,17 @@ accounts = [
 tmp = dict()
 
 def is_gyn(role_id):
+    if role_id in range(348110, 348120):
+        return True
+    if role_id == 340780:
+        # IU
+        return True
+    if role_id == 347110:
+        # guyuena
+        return True
+    if role_id == 348668:
+        # yexin (@jinbi)
+        return True
     info = tmp.get(role_id, None)
     if not info:
         print("no detail info!")
@@ -56,15 +68,14 @@ def is_gyn(role_id):
             return True
         if info["level"]>=30 and info["model"] == 4 and info["atk"]< 25000:
             return True
-        if info["level"]>=30 and info["vip"] < 3 and info["atk"] < 40000:
+        if info["level"]>=30 and info["vip"] < 4 and info["atk"] < 40000:
             return True
-        if info["level"]>=40 and info["vip"] < 3 and info["atk"] < 60000:
+        if info["level"]>=40 and info["vip"] < 4 and info["atk"] < 100000:
             return True
         if info["name"].isdigit() and info["name"][:2] in ("19", "20", "21"):
             return True
-        if info["guild"] in BAD_GUILD and info["level"] < 50:
-            #return True
-            pass
+        #if info["guild"] in BAD_GUILD and info["level"] < 50:
+        #    return True
     return False
 
 def get_proxies2():
@@ -93,6 +104,23 @@ async def login_verify(user_id, token, version='1.7.61848', proxy=None):
             t = await resp.text()
             r = json.loads(t)
     return r['session']
+
+async def online(role_id_list):
+    role_ids = ",".join(map(str, role_id_list))
+    url = 'http://localhost:7788/target_online?role_id={}'.format(role_ids)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=5) as resp:
+            t = await resp.text()
+            if t != "ok":
+                print(t)
+
+async def offline(role_id):
+    url = 'http://localhost:7788/target_offline?role_id={}'.format(role_id)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=5) as resp:
+            t = await resp.text()
+            if t != "ok":
+                print(t)
 
 def char_gen():
     blocks = [15708544, 15708800, 15709056, 15709312]
@@ -185,7 +213,7 @@ async def one(loop, email):
                     # start do things with server
                     for player in players:
                         name, level, gender, role_id = player
-                        if role_id not in tmp:
+                        if role_id not in tmp and level >= 30:
                             # read detail
                             writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
                 elif len(players) == 1:
@@ -194,22 +222,23 @@ async def one(loop, email):
                     if info:
                         print(now, role_id, info["name"], "is online")
                         if tmp.get("gyn_status", None):
-                            os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
+                            await online([role_id])
                     else:
                         # not info, check database?
                         print(now, role_id, "online")
                         # TODO: if face a hard drive io performance problem, common the query below
                         if is_target(role_id):
-                            os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
-                        writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
+                            await online([role_id])
+                        if level >= 30:
+                            writer.write(b"\x00\x00\x00\x0b\x00\x81\x00\x00\x00\x00\xda" + role_id.to_bytes(4, byteorder='little'))
             elif head == b'\x00\x00\x00\x07' and body.startswith(b'\x01\x00\x1b'):
                 # offline
                 role_id = int.from_bytes(body[-4:], byteorder="little")
                 info = tmp.get(role_id, None)
                 if info:
-                    print(now, role_id, info["name"], "is offline")
-                    if tmp.get("gyn_status", None):
-                        os.system("curl http://localhost:7788/target_offline?role_id={} &".format(role_id))
+                    print(now, role_id, info["name"], "is offline", info)
+                    if info.get("gyn_status", None):
+                        await offline(role_id)
                 else:
                     print(now, role_id, "offline")
             elif body.startswith(b"\x00\x81\x00\x00\x00\x00"):
@@ -230,9 +259,9 @@ async def one(loop, email):
                         c.execute("SELECT * FROM pigs_20 WHERE role_id=?", (role_id, ))
                         if not c.fetchone():
                             # not myself
-                            os.system("curl http://localhost:7788/target_online?role_id={} &".format(role_id))
+                            await online([role_id])
                             c.execute("REPLACE INTO sbs (name, level, role_id, model, atk, vip) VALUES (?,?,?,?,?,?)", (name, level, role_id, model_id, atk, vip))
-                            tmp["gyn_status"] = gyn_status
+                            tmp[role_id]["gyn_status"] = gyn_status
                             print(now, role_id, gyn_status, tmp[role_id])
                         else:
                             print(now, role_id, "self", tmp[role_id])
@@ -251,7 +280,7 @@ async def one(loop, email):
         account["status"] = "offline"
 
 
-async def dispatcher(loop, interval=15*60):
+async def dispatcher(loop, interval=5*60):
     email = accounts[0]["email"]
     asyncio.ensure_future(one(loop, email), loop=loop)
     while True:

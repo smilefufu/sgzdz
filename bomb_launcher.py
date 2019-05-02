@@ -53,6 +53,7 @@ async def online(request):
 async def offline(request):
     role_id = int(request.query["role_id"])
     try:
+        t = bomb_pool[role_id]
         del bomb_pool[role_id]
         for ws in all_ws:
             await ws.send_str(json.dumps(bomb_pool))

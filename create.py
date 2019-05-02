@@ -396,13 +396,4 @@ if __name__ == "__main__":
             role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
             print('created role:', role_id, name)
         read_all(s)
-        chapter, section = r['story_index']
-        left_chapters = EPISODES[chapter-1:]
-        left_story = reduce(lambda t, c: t+c, left_chapters, [])[section-1:]
-        battle_times = 0
-        for story in left_story:
-            battle_times += do_story(s, story)
-            read_all(s)
-            if (r['level'] > 5 and battle_times >= 20) or battle_times >= 25:  # 100/5 = 20 maxed battle times, stamina empty
-                break
         c.execute("INSERT INTO guards values (?, ?, ?, 0)", (email, name, role_id))
