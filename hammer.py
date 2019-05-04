@@ -570,7 +570,7 @@ def do(buyer, smasher, server_id):
     card_list = smashapp.sell(41180)
     buyapp = SGZDZ(buyer, server_id)
     if sum(x[2] for x in card_list) <= 41180:
-        raise StandardError("ERROR: not enough card for trade!!!")
+        raise BaseException("ERROR: not enough card for trade!!!")
     for card in card_list:
         print(card)
         card_name, card_id, price_to_put, market_id = card
