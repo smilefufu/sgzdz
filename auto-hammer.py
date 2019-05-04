@@ -17,11 +17,13 @@ def worker(buyer, smasher):
     print("buyer", buyer, "smasher", smasher)
     try:
         buyer_gold, smasher_gold = do(buyer, smasher, server_id)
-        if smasher_gold < 41180:
-            print("unexcepted error!", buyer, smasher)
-            exit()
+        print(buyer_gold, smasher_gold)
+        assert smasher_gold >= 41180, "unexcepted error! {} {}".format(buyer, smasher)
         print("==============={}:{}======{}:{}==============".format(buyer, buyer_gold, smasher, smasher_gold))
         return smasher
+    except AssertionError:
+        print("smasher_gold not enough")
+        exit()
     except:
         print(traceback.format_exc())
         print("==============something wrong=====================")

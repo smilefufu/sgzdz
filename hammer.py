@@ -558,12 +558,19 @@ class SGZDZ(object):
         self.read_all()
         return pid
 
+    def cancel_sell(self, market_id):
+        data = b"\x00\x00\x00\x0f\x00\x07\x00\x00\x00\x00\x96"
+        data += market_id
+        self._send_data(data)
+        self.read_all()
+
 
 def do(buyer, smasher, server_id):
     smashapp = SGZDZ(smasher, server_id)
     card_list = smashapp.sell(41180)
     buyapp = SGZDZ(buyer, server_id)
-    assert sum(x[2] for x in card_list) >= 41180, "ERROR: not enough card for trade!!!"
+    if sum(x[2] for x in card_list) <= 41180:
+        raise StandardError("ERROR: not enough card for trade!!!")
     for card in card_list:
         print(card)
         card_name, card_id, price_to_put, market_id = card
