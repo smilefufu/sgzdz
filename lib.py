@@ -419,36 +419,31 @@ def make_story_data(index):
     return b"\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x06" if index in battle_index else b"\x00\x00\x00\x07\x00\x04\x00\x00\x00\x00\x03"
 
 
-def find_cards(data):
-    cards = set()
-    if b"sysMail_addressor_BlackWings" in data:
-        end_pos = data.find(b"sysMail_addressor_BlackWings")
-        search_data = data[:end_pos]
-        # start  searching
-        all_card_code = dict()
-        all_card_code.update(CARD_CODE_GOLD)
-        all_card_code.update(CARD_CODE_PURPLE)
-        for card, code in all_card_code.items():
-            idx = search_data.find(code+b"\x00\x00\x00\x00")
-            if idx > 8:
-                card_id = search_data[idx-8:idx]
-                cards.add((card, card_id))
-    return cards
+def find_pocket_cards(data):
+    search_data = data.split(b"sysMail_addressor_system")[0]
+    print("card in pocket:", find_cards(search_data))
+    return find_cards(search_data, cd=True)
 
-def find_cards2(data):
+def find_market_cards(data):
+    search_data = data.split(b"sysMail_addressor_system")[-1]
+    print("card on market:", find_cards(search_data))
+    return find_cards(search_data)
+
+
+def find_cards(data, cd=False):
     cards = []
-    if b"sysMail_addressor_BlackWings" in data:
-        end_pos = data.find(b"sysMail_addressor_BlackWings")
-        search_data = data[:end_pos]
-        # start  searching
-        all_card_code = dict()
-        all_card_code.update(CARD_CODE_GOLD)
-        all_card_code.update(CARD_CODE_PURPLE)
-        for card, code in all_card_code.items():
-            card_id_list = re.findall(b"(.{4}\x00\x00\x00\x00)"+code+b"\x00\x00\x00\x00", data)
-            for card_id in card_id_list:
-                cards.append((card, card_id))
-        return cards
+    # start  searching
+    all_card_code = dict()
+    all_card_code.update(dict((y, x) for x,y in CARD_CODE_GOLD.items()))
+    all_card_code.update(dict((y, x) for x,y in CARD_CODE_PURPLE.items()))
+    for i in range(8, len(data)-8):
+        if data[i:i+4] in all_card_code and data[i+4:i+8] == b"\x00\x00\x00\x00":
+            code = data[i:i+4]
+            card = all_card_code[code]
+            card_id = data[i-8:i]
+            cd_time = int.from_bytes(data[i-8+213:i-8+213+4], byteorder="little") if cd else 0
+            cards.append((card, card_id, cd_time))
+    return cards
 
 def init_data(data):
     # head is not included, only body
@@ -473,7 +468,8 @@ def init_data(data):
     ret['exp'] = int.from_bytes(data[name_length+35:name_length+39], byteorder="little")
     unknow_strlen = data[name_length+52]
     ret['story_index'] = (data[name_length+unknow_strlen+54], data[name_length+unknow_strlen+55])
-    ret['cards'] = find_cards(data[name_length+unknow_strlen+55:])
+    ret['cards'] = find_pocket_cards(data)
+    ret['market'] = find_market_cards(data)
     return ret
 
 def get_formation(cards, episode=None):

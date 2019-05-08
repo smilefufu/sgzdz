@@ -14,7 +14,7 @@ from functools import reduce
 
 import requests
 
-from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, gen_name, make_login_server_data, make_quick_battle_data
+from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, gen_name, make_login_server_data, make_quick_battle_data, init_data
 from const import EPISODES, SERVER_LIST, GUILD_ID, CARD_CODE_PURPLE, CARD_CODE_GOLD
 
 BAD_CARD = ['曹仁']
@@ -349,49 +349,6 @@ def seven_day(s, extra):
         s.sendall(b"\x00\x00\x00\x0f\x00\x2f\x00\x00\x00\x01\x01\x01\x00\x00\x00\x07\x00\x00\x00")  # day7 1-1
         return True
 
-def find_cards(data):
-    cards = list()
-    if b"sysMail_addressor_BlackWings" in data:
-        end_pos = data.find(b"sysMail_addressor_BlackWings")
-        search_data = data[:end_pos]
-        # start  searching
-        all_card_code = dict()
-        all_card_code.update(CARD_CODE_GOLD)
-        # all_card_code.update(CARD_CODE_PURPLE)
-        for card, code in all_card_code.items():
-            idx = search_data.find(code+b"\x00\x00\x00\x00")
-            if idx > 8:
-                card_id = search_data[idx-8:idx]
-                if card_id[-4:] == b"\x00\x00\x00\x00":
-                    cards.append((card, card_id))
-    return cards
-
-def init_data(data):
-    # head is not included, only body
-    # data[:12]  unknown
-    # data[12:16] == data[16:20] role_id, repeat twice
-    # data[20:22] == b'\x14\x00' fixed bytes
-    # data[22] name length
-    # data[23:23+data[22]] name
-    # data[data[22]+23] model_id
-    # data[data[22]+24] level
-    # data[data[22]+25:data[22]+28] ==  b'\x00\xc8\x09'  unkown bytes
-    # data[data[22]+35:data[22]+39] now exp
-    # data[data[22]+28:data[22]+54] == b'\x00...  26 bytes 00
-    # data[data[22]+54] == b'\x01'    data[data[22]+55] story_index
-    ret = dict()
-    ret['role_id'] = int.from_bytes(data[12:16], byteorder="little")
-    name_length = data[22]
-    if name_length:
-        ret['name'] = data[23:23+name_length].decode('utf8')
-    ret['model_id'] = data[name_length+23]
-    ret['level'] = data[name_length+24]
-    ret['exp'] = int.from_bytes(data[name_length+35:name_length+39], byteorder="little")
-    unknow_strlen = data[name_length+52]
-    ret['story_index'] = (data[name_length+unknow_strlen+54], data[name_length+unknow_strlen+55])
-    ret['cards'] = find_cards(data[name_length+unknow_strlen+55:])
-    return ret
-
 class SGZDZ(object):
 
     def __init__(self, email, server_id, version="1.7.61848", token=None, user_id=None, session=None):
@@ -508,8 +465,8 @@ class SGZDZ(object):
     def sell(self, amount, can_over=True):
         # can_over: can over the amount
         cards_can_sell = list()
-        for card_name, card_id in self._info["cards"]:
-            if card_name in BAD_CARD or card_id[4:] != b"\x00\x00\x00\x00":
+        for card_name, card_id, cd in self._info["cards"]:
+            if card_name in BAD_CARD or card_id[4:] != b"\x00\x00\x00\x00" or cd:
                 continue
             price = self.query_price(card_id)
             cards_can_sell.append((card_name, card_id, price))
