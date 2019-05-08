@@ -435,6 +435,20 @@ def find_cards(data):
                 cards.add((card, card_id))
     return cards
 
+def find_cards2(data):
+    cards = []
+    if b"sysMail_addressor_BlackWings" in data:
+        end_pos = data.find(b"sysMail_addressor_BlackWings")
+        search_data = data[:end_pos]
+        # start  searching
+        all_card_code = dict()
+        all_card_code.update(CARD_CODE_GOLD)
+        all_card_code.update(CARD_CODE_PURPLE)
+        for card, code in all_card_code.items():
+            card_id_list = re.findall(b"(.{4}\x00\x00\x00\x00)"+code+b"\x00\x00\x00\x00", data)
+            for card_id in card_id_list:
+                cards.append((card, card_id))
+        return cards
 
 def init_data(data):
     # head is not included, only body
