@@ -211,7 +211,7 @@ def do_daily(s, extra):
 def heart_beat(s):
     s.sendall(b"\x00\x00\x00\x02\x01\x00")
 
-def do_guild(s, extra, server_id=20):
+def do_guild(s, extra, server_id=20, need_join=True):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
     if extra.get("guild") != now.strftime("%Y-%m-%d") and now.hour not in (12, 13, 20, 21, 22, 23):
         extra["guild"] = now.strftime("%Y-%m-%d")
@@ -220,7 +220,8 @@ def do_guild(s, extra, server_id=20):
         instructure = GUILD_ID.get(server_id)
         if not instructure:
             return True
-        s.sendall(instructure)
+        if need_join:
+            s.sendall(instructure)
         #time.sleep(10)
         #heart_beat(s)
         read_all(s)
@@ -273,7 +274,8 @@ def do_guild(s, extra, server_id=20):
                     item_id = item[:4]
                     currency = item[17]
                     price = int.from_bytes(item[18:], byteorder='little')
-                    if currency == 1 or (currency == 14 and price <= 200):
+                    threshold = 420 if SERVERID == 20 else 200
+                    if currency == 1 or (currency == 14 and price <= threshold):
                         tobuy.append(item_id)
                 if len(tobuy) >= 2:
                     print("buy items")
@@ -309,9 +311,10 @@ def do_guild(s, extra, server_id=20):
 
         read_all(s)
         # leave guild
-        print("leave guild")
-        s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
-        read_all(s)
+        if need_join:
+            print("leave guild")
+            s.sendall(b"\x00\x00\x00\x07\x00\x0f\x00\x00\x00\x00\x30")
+            read_all(s)
         heart_beat(s)
         if not read_one(s):
             raise BaseException("bug guild account")
@@ -450,7 +453,8 @@ if __name__ == "__main__":
                 update_extra(table_name, email, extra, c)
             try:
                 if r["level"] >=19:
-                    do_guild(s, extra, SERVERID)
+                    need_join = False if email in ["fufu1@meirishentie.com", "augustus2019@gmail.com"] else True
+                    do_guild(s, extra, SERVERID, need_join)
                     update_extra(table_name, email, extra, c)
             except:
                 # still mark as done when failed
@@ -459,8 +463,8 @@ if __name__ == "__main__":
                 sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
                 c.execute(sql, (r['level'], now, r["role_id"], email))
                 # re-login and quit guild
-                os.popen("python quitguild.py {} {} &".format(email, server_id))
-                # os.popen("echo {} {} > guild_bug_account.log &".format(now, email))
+                if need_join:
+                    os.popen("python quitguild.py {} {} &".format(email, server_id))
                 exit()
             if do_daily(s, extra):
                 update_extra(table_name, email, extra, c)
