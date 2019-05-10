@@ -432,8 +432,8 @@ if __name__ == "__main__":
         read_one(s)
         # update info
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sql = "UPDATE {} SET level = ?, last_login=?, role_id=? WHERE email=?".format(table_name)
-        c.execute(sql, (r['level'], now, r["role_id"], email))
+        sql = "UPDATE {} SET level = ?, last_login=?, role_id=?, gold=? WHERE email=?".format(table_name)
+        c.execute(sql, (r['level'], now, r["role_id"], r["gold"], email))
         c.execute("SELECT extra FROM " + table_name +" WHERE email=?", (email, ))
         row = c.fetchone()
         if row:

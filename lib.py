@@ -445,6 +445,27 @@ def find_cards(data, cd=False):
             cards.append((card, card_id, cd_time))
     return cards
 
+def find_currency(data):
+    search_data = data.split(b"sysMail_addressor_system")[-1]
+    i = 0
+    while i < len(search_data):
+        if search_data[i:i+1] in (b"\x00", b"@"):
+            i += 1
+            continue
+        slen = search_data[i]
+        try:
+            string = search_data[i+1:i+1+slen].decode("utf8")
+            print(string)
+        except:
+            print("break at:", i)
+            break
+        i += 1 + slen
+    offset = i + 42
+    ret = dict()
+    for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
+        ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
+    return ret
+
 def init_data(data):
     # head is not included, only body
     # data[:12]  unknown
@@ -458,6 +479,7 @@ def init_data(data):
     # data[data[22]+35:data[22]+39] now exp
     # data[data[22]+28:data[22]+54] == b'\x00...  26 bytes 00
     # data[data[22]+54] == b'\x01'    data[data[22]+55] story_index
+    # print(data)
     ret = dict()
     ret['role_id'] = int.from_bytes(data[12:16], byteorder="little")
     name_length = data[22]
@@ -470,6 +492,8 @@ def init_data(data):
     ret['story_index'] = (data[name_length+unknow_strlen+54], data[name_length+unknow_strlen+55])
     ret['cards'] = find_pocket_cards(data)
     ret['market'] = find_market_cards(data)
+    currency = find_currency(data)
+    ret.update(currency)
     return ret
 
 def get_formation(cards, episode=None):
