@@ -201,10 +201,12 @@ def do_daily(s, extra):
         s.sendall(b"\x00\x00\x00\x08\x00\x05\x00\x00\x00\x00\xd6\x02")
         # guild reward
         s.sendall(b"\x00\x00\x00\x08\x00\x06\x00\x00\x00\x00\xd6\x0e")
+        # dingshang reward
+        s.sendall(b"\x00\x00\x00\x07\x00\x07\x00\x00\x00\x00\x18")
         # get mail rewrd when friday
         if now.weekday() == 4:
-            s.sendall(b"\x00\x00\x00\x07\x00\x01\x00\x00\x00\x00\x69")
-            read_all()
+            s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
+            read_all(s)
         return True
     return False
 
