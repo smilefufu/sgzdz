@@ -351,33 +351,52 @@ def seven_day(s, extra):
 
 class SGZDZ(object):
 
-    def __init__(self, email, server_id, version="1.7.61848", token=None, user_id=None, session=None):
+    def __init__(self, email, server_id, version="1.7.61848", token=None, user_id=None):
         self._email = email
         self._server_id = server_id
         self._device_id = make_imei()
         self._token = token
         self._user_id = user_id
+        self._version = version
         self.__counter = 1
+        i = 0
+        while i < 3:
+            try:
+                self.connect()
+                break
+            except:
+                i += 1
+                print("error on first pack! Retry", i, "on email", email)
+
+    def connect(self):
         self._heartbeat = time.time()
-        self._gold = 0
-        server = SERVER_LIST[server_id]
+        server = SERVER_LIST[self._server_id]
         SERVERID, HOST, PORT = server
         try:
-            if token and user_id:
-                session = login_verify(user_id, token, version=version, server_id=SERVERID)
+            if self._token and self._user_id:
+                session = login_verify(self._user_id, self._token, version=self._version, server_id=SERVERID)
             else:
-                raise StandardError("go except")
+                raise BaseException("go except")
         except:
-            self._token, self._user_id = login_account(email, self._device_id)
-            session = login_verify(self._user_id, self._token, version=version, server_id=self._server_id)
+            assert self._email, "Not supported login method!"
+            self._token, self._user_id = login_account(self._email, self._device_id)
+            session = login_verify(self._user_id, self._token, version=self._version, server_id=self._server_id)
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((HOST, PORT))
-        self._sock.sendall(make_login_server_data(version, self._user_id, SERVERID, self._device_id, session, os="Android OS 6.0.1 / API-23 (V417IR/eng.root.20181010.162559)", phone="Netease MuMu"))
+        self._sock.sendall(make_login_server_data(self._version, self._user_id, SERVERID, self._device_id, session, os="Android OS 6.0.1 / API-23 (V417IR/eng.root.20181010.162559)", phone="Netease MuMu"))
         head, body = self.read_one()
         self._info = init_data(body)
+        self._gold = self._info["gold"]
+        self._purple_cards = self._info["purple_cards"]
+        self._gold_cards = self._info["gold_cards"]
+        self._market = self._info["market"]
         print(self._info)
+        self._market_id_map = dict()  # key: market_id, value: card_id
         self.read_all()
         heart_beat(self._sock)
+
+    def close(self):
+        self._sock.close()
 
     def read_all(self):
         while True:
@@ -396,9 +415,8 @@ class SGZDZ(object):
             return None
         body = read_bytes(self._sock, int.from_bytes(head, byteorder="big"))
         if head == b"\x00\x00\x00\x09" and body.startswith(b"\x01\x00\x5c\x01\x0d"):  # 元宝
-            GOLD = int.from_bytes(body[-4:], byteorder="little")
-            print("gold change:", GOLD)
-            self._gold = GOLD
+            self._gold = int.from_bytes(body[-4:], byteorder="little")
+            print(self._email, "gold change:", self._gold)
         return head, body
 
     def _send_data(self, data):
@@ -413,6 +431,7 @@ class SGZDZ(object):
 
     def _read_until(self, head, body_start, max_read=10):
         assert head or body_start
+        print("start read until...")
         c = max_read
         while c > 0:
             if time.time() - self._heartbeat >= 10:
@@ -420,6 +439,7 @@ class SGZDZ(object):
                 self._heartbeat = time.time()
             try:
                 h, b = self.read_one()
+                print(h, b)
             except:
                 continue
             if (h == head or head is None) and (body_start is None or b.startswith(body_start)):
@@ -458,14 +478,15 @@ class SGZDZ(object):
         data += b"\x01\x00\x00\x00"
         data += price.to_bytes(4, byteorder='little')
         self._send_data(data)
-        body = self._read_until(None, b"\x01\x00\x59", max_read=3)
+        body = self._read_until(None, b"\x01\x00\x59", max_read=10)
         market_id = body[3:3+8]
+        self._market_id_map[market_id] = card_id
         return market_id
 
     def sell(self, amount, can_over=True):
         # can_over: can over the amount
         cards_can_sell = list()
-        for card_name, card_id, cd in self._info["cards"]:
+        for card_name, card_id, cd in self._gold_cards + self._purple_cards:
             if card_name in BAD_CARD or card_id[4:] != b"\x00\x00\x00\x00" or cd:
                 continue
             price = self.query_price(card_id)
@@ -513,6 +534,19 @@ class SGZDZ(object):
         data += market_id
         pid = self._send_data(data)
         self.read_all()
+        if market_id in self._market_id_map:
+            # change cards list
+            sold_card_id = self._market_id_map[market_id]
+            for card in self._purple_cards[:]:
+                card_name, card_id, cd = card
+                if card_id == sold_card_id:
+                    self._purple_cards.remove(card)
+                    break
+            for card in self._gold_cards[:]:
+                card_name, card_id, cd = card
+                if card_id == sold_card_id:
+                    self._gold_cards.remove(card)
+                    break
         return pid
 
     def cancel_sell(self, market_id):

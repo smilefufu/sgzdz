@@ -458,7 +458,6 @@ def find_currency(data):
         slen = search_data[i]
         try:
             string = search_data[i+1:i+1+slen].decode("utf8")
-            print(string)
         except UnicodeDecodeError:
             if i < 50:
                 print(data)
