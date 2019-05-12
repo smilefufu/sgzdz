@@ -505,6 +505,9 @@ if __name__ == "__main__":
             time_section = int(datetime.datetime.now().hour / 8)
             chapter = time_section + 1
             section = 1
+            if email in ('fufu1@meirishentie.com', ):
+                available = [(22, 7), (22, 4), (21, 10), (21, 7), (21, 4)]
+                chapter, section = available[int(datetime.datetime.now().hour / len(available))]
             print('start shao dang')
             for i in range(10):
                 s.sendall(make_quick_battle_data(chapter, section))
