@@ -397,6 +397,14 @@ class SGZDZ(object):
 
     def close(self):
         self._sock.close()
+        try:
+            conn = sqlite3.connect("data.db")
+            conn.isolation_level = None   # auto commit
+            c = conn.cursor()
+            table_name = 'pigs_{}'.format(self._server_id)
+            c.execute("UPDATE " + table_name + " SET gold=? WHERE email=?", (self._gold, self._email))
+        except:
+            pass
 
     def read_all(self):
         while True:
