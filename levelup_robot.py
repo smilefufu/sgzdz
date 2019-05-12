@@ -203,7 +203,13 @@ def do_daily(s, extra):
         s.sendall(b"\x00\x00\x00\x08\x00\x06\x00\x00\x00\x00\xd6\x0e")
         # dingshang reward
         s.sendall(b"\x00\x00\x00\x07\x00\x07\x00\x00\x00\x00\x18")
+        # buy vip
         # get mail rewrd when friday
+        if extra["bind_gold"] > 60:
+            buy_times = min(6, int(extra["bind_gold"]/60))
+            s.sendall(b"\x00\00\x00\x0c\x00\x10\x00\x00\x00\x00\xb2\x0c" + buy_times.to_bytes(4, byteorder="little"))
+            read_all(s)
+            s.sendall(b"\x00\x00\x00\x0d\x00\x11\x00\x00\x00\x01\x10\x14\x00" + buy_times.to_bytes(4, byteorder="little"))
         if now.weekday() == 4:
             s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
             read_all(s)
@@ -445,6 +451,7 @@ if __name__ == "__main__":
                     extra = json.loads(extra)
                 except:
                     extra = dict()
+            extra["bind_gold"] = r["bind_gold"]
             if len(r["cards"]) >=3:
                 print('in here')
                 cards = ",".join(c[0] for c in r["gold_cards"] if c[0] not in ["张辽", "小乔"])
