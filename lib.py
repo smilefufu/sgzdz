@@ -448,7 +448,8 @@ def find_cards(data, cd=False, color="gold"):
 
 def find_currency(data):
     sp = data.split(b"sysMail_addressor_system")
-    assert len(sp) > 1, "Unexcepted currency data!!!"
+    if len(sp) == 1:
+        return dict(coin=0, bind_gold=0, red_wine=0, tech_point=0, gold=0, purple_wine=0, gold_wine=0)
     search_data = sp[-1]
     i = 0
     while i < len(search_data):
