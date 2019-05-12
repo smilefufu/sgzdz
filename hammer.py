@@ -439,7 +439,7 @@ class SGZDZ(object):
                 self._heartbeat = time.time()
             try:
                 h, b = self.read_one()
-                print(h, b)
+                # print(h, b)
             except:
                 continue
             if (h == head or head is None) and (body_start is None or b.startswith(body_start)):

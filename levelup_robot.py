@@ -447,7 +447,7 @@ if __name__ == "__main__":
                     extra = dict()
             if len(r["cards"]) >=3:
                 print('in here')
-                cards = ",".join(c[0] for c in r["cards"] if c[0] not in ["张辽", "小乔"])
+                cards = ",".join(c[0] for c in r["gold_cards"] if c[0] not in ["张辽", "小乔"])
                 c.execute("UPDATE "+table_name+" SET cards=? WHERE email=?", (cards, email))
                 if "cards" in extra:
                     del extra["cards"]

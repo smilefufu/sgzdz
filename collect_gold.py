@@ -27,6 +27,9 @@ if __name__ == "__main__":
                 smasher.close()
                 print("do next target....")
                 continue
+            if not collector._purple_cards:
+                print("no purple card!!!")
+                break
             for card_name, card_id, cd in collector._purple_cards:
                 if cd == 0:
                     print("using", card_name, card_id, "to collect", smasher._gold)
