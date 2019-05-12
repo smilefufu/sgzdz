@@ -22,7 +22,7 @@ if __name__ == "__main__":
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
     table_name = 'pigs_{}'.format(server_id)
-    c.execute("SELECT email FROM " + table_name + " WHERE cards like ? ORDER BY RANDOM()", ("%" + args.card_name + "%", ))
+    c.execute("SELECT email FROM " + table_name + " WHERE email != ? and cards like ? ORDER BY RANDOM()", (collector_email, "%" + args.card_name + "%", ))
     for item in c.fetchall():
         email = item[0]
         smasher = SGZDZ(email, server_id)
