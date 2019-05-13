@@ -482,6 +482,8 @@ def find_currency(data):
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
+    if ret["gold"] > 10000000:
+        ret = dict(coin=0, bind_gold=0, red_wine=0, tech_point=0, gold=0, purple_wine=0, gold_wine=0)
     return ret
 
 def init_data(data):

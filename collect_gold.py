@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sqlite3
 import time
 import math
 import argparse
@@ -30,7 +31,7 @@ if __name__ == "__main__":
         conn.isolation_level = None   # auto commit
         c = conn.cursor()
         table_name = 'pigs_{}'.format(server_id)
-        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 5000", ("%"+prefix+"%", ))
+        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 50000", ("%"+prefix+"%", ))
         email_list = [row[0] for row in c.fetchall()]
     for email in email_list:
         smasher = SGZDZ(email, server_id)
@@ -45,7 +46,7 @@ if __name__ == "__main__":
             exit()
         for card_name, card_id, cd in collector._purple_cards:
             if cd == 0:
-                print("using", card_name, card_id, "to collect", smasher._gold)
+                print("using", card_name, card_id, "to collect", smasher._gold, end='')
                 price = collector.query_price(card_id)
                 base_price = int(price/2)
                 max_price = price * 10
