@@ -462,7 +462,7 @@ def find_currency(data):
         try:
             string = search_data[i+1:i+1+slen].decode("utf8")
         except UnicodeDecodeError:
-            print(search_data[i:700])
+            # print(search_data[i:700])
             print("break at:", i)
             break
         i += 1 + slen

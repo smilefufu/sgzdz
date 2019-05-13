@@ -485,7 +485,7 @@ class SGZDZ(object):
         data += b"\x01\x00\x00\x00"
         data += price.to_bytes(4, byteorder='little')
         self._send_data(data)
-        body = self._read_until(None, b"\x01\x00\x59", max_read=10)
+        body = self._read_until(None, b"\x01\x00\x59", max_read=20)
         market_id = body[3:3+8]
         self._market_id_map[market_id] = card_id
         return market_id
