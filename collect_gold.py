@@ -18,13 +18,21 @@ if __name__ == "__main__":
     sp = args.range.split("-")
     assert len(sp[0]) == len(sp[1])
     pad = len(sp[0])
-    rng = range(*[int(x) for x in sp])
     server_id = args.server_id
     # collector = SGZDZ(None, server_id, token="aa7a3c0ed85e4ab79592415e1eef058a", user_id="44cf30b8-abae-41d5-bcbc-f3e22c2ef21d")
     collector = SGZDZ(collector_email, server_id)
-    for i in rng:
+    if sp[0] != '':
+        rng = range(*[int(x) for x in sp])
         tmp = "{}{:0>"+str(pad)+"}@gmail.com"
-        email = tmp.format(prefix, i)
+        email_list = [tmp.format(prefix, i) for i in rng]
+    else:
+        conn = sqlite3.connect("data.db")
+        conn.isolation_level = None   # auto commit
+        c = conn.cursor()
+        table_name = 'pigs_{}'.format(server_id)
+        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 5000", ("%"+prefix+"%", ))
+        email_list = [row[0] for row in c.fetchall()]
+    for email in email_list:
         smasher = SGZDZ(email, server_id)
         print("collecting email:", email, "with gold:", smasher._gold)
         if smasher._gold > 39000 or smasher._gold < 1000:
