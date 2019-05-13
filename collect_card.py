@@ -23,16 +23,22 @@ if __name__ == "__main__":
     c = conn.cursor()
     table_name = 'pigs_{}'.format(server_id)
     c.execute("SELECT email FROM " + table_name + " WHERE email != ? and cards like ? ORDER BY RANDOM()", (collector_email, "%" + args.card_name + "%", ))
-    for item in c.fetchall():
+    accounts = c.fetchall()
+    if not accounts:
+        c.execute("SELECT email FROM " + table_name + " WHERE email != ? ORDER BY RANDOM()", (collector_email, ))
+        accounts = c.fetchall()
+    for item in accounts:
         email = item[0]
         smasher = SGZDZ(email, server_id)
+        # at least 2 gold card need to be left
         card_will_left = [card_name for card_name, card_id, cd in smasher._gold_cards if card_name != args.card_name and cd == 0]
         if len(card_will_left) < 2:
             smasher.close()
             continue
-        print("collecting from:", email, "with gold:", ",".join(card_name for card_name, card_id, cd in smasher._gold_cards))
-        for card_name, card_id, cd in smasher._gold_cards + smasher._purple_cards:
-            if cd == 0 and card_name == args.card_name:
+        print("collecting from", email, ":", ",".join(card_name for card_name, card_id, cd in smasher._gold_cards + smasher._purple_cards))
+        cards = smasher._purple_cards if args.card_name == "purple" else smasher._gold_cards + smasher._purple_cards
+        for card_name, card_id, cd in cards:
+            if cd == 0 and (card_name == args.card_name or args.card_name == "purple"):
                 print("collecting:", card_name, card_id)
                 price = smasher.query_price(card_id)
                 base_price = int(price/2)

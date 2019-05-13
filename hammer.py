@@ -390,10 +390,10 @@ class SGZDZ(object):
         self._purple_cards = self._info["purple_cards"]
         self._gold_cards = self._info["gold_cards"]
         self._market = self._info["market"]
-        print(self._info)
         self._market_id_map = dict()  # key: market_id, value: card_id
         self.read_all()
         heart_beat(self._sock)
+        print("login", self._email, "success!")
 
     def close(self):
         self._sock.close()
@@ -439,7 +439,6 @@ class SGZDZ(object):
 
     def _read_until(self, head, body_start, max_read=10):
         assert head or body_start
-        print("start read until...")
         c = max_read
         while c > 0:
             if time.time() - self._heartbeat >= 10:
