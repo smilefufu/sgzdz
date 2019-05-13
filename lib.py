@@ -462,18 +462,23 @@ def find_currency(data):
         try:
             string = search_data[i+1:i+1+slen].decode("utf8")
         except UnicodeDecodeError:
+            print(search_data[i:700])
             print("break at:", i)
             break
         i += 1 + slen
     left_data = search_data[i:1000]
     flag = left_data.find(b"\x08\x00\x00")
-    if flag not in range(10, 100):
+    if flag not in range(20, 80):
         flag = left_data.find(b"\x07\x00\x00")
-    if flag > 0:
+    if flag not in range(20, 80):
+        flag = left_data.find(b"\x06\x00\x00")
+    if flag in range(20,80):
+        print("find flag:", flag)
         offset = i + flag + 3
     else:
         print("cant find flag", search_data[i:500])
         offset = i + 58
+    print(search_data[i:500])
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
