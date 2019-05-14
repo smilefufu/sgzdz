@@ -469,17 +469,21 @@ def find_currency(data):
             break
         i += 1 + slen
     left_data = search_data[i:1000]
-    flag = left_data.find(b"\x08\x00\x00")
-    if flag not in range(20, 60):
+    flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00')
+    if flag > 0:
+        flag += 35
+    if flag not in range(30, 60):
+        flag = left_data.find(b"\x08\x00\x00")
+    if flag not in range(30, 60):
         flag = left_data.find(b"\x07\x00\x00")
-    if flag not in range(20, 60):
+    if flag not in range(30, 60):
         flag = left_data.find(b"\x06\x00\x00")
-    if flag not in range(20, 60):
+    if flag not in range(30, 60):
         flag = left_data.find(b"\x05\x00\x00")
-    if flag in range(20,60):
+    if flag in range(30,60):
         print("find flag:", flag)
         offset = i + flag + 3
-        # print(search_data[i:500])
+        print(search_data[i:500])
     else:
         print("cant find flag", search_data[i:500])
         offset = i + 58
