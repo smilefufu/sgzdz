@@ -449,6 +449,8 @@ def find_cards(data, cd=False, color="gold"):
 def find_currency(data):
     sp = data.split(b"sysMail_addressor_system")
     if len(sp) == 1:
+        print(data)
+        print("bad data")
         return dict(coin=0, bind_gold=0, red_wine=0, tech_point=0, gold=0, purple_wine=0, gold_wine=0)
     search_data = sp[-1]
     i = 0
@@ -468,17 +470,19 @@ def find_currency(data):
         i += 1 + slen
     left_data = search_data[i:1000]
     flag = left_data.find(b"\x08\x00\x00")
-    if flag not in range(20, 80):
+    if flag not in range(20, 60):
         flag = left_data.find(b"\x07\x00\x00")
-    if flag not in range(20, 80):
+    if flag not in range(20, 60):
         flag = left_data.find(b"\x06\x00\x00")
-    if flag in range(20,80):
+    if flag not in range(20, 60):
+        flag = left_data.find(b"\x05\x00\x00")
+    if flag in range(20,60):
         print("find flag:", flag)
         offset = i + flag + 3
+        # print(search_data[i:500])
     else:
         print("cant find flag", search_data[i:500])
         offset = i + 58
-    # print(search_data[i:500])
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
