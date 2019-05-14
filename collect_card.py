@@ -32,7 +32,8 @@ if __name__ == "__main__":
         smasher = SGZDZ(email, server_id)
         # at least 2 gold card need to be left
         card_will_left = [card_name for card_name, card_id, cd in smasher._gold_cards if card_name != args.card_name and cd == 0]
-        if len(card_will_left) < 2:
+        if args.card_name != "purple" and len(card_will_left) < 2:
+            print("not enough gold card left!")
             smasher.close()
             continue
         print("collecting from", email, ":", ",".join(card_name for card_name, card_id, cd in smasher._gold_cards + smasher._purple_cards))
