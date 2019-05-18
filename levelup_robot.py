@@ -189,7 +189,7 @@ def eat_food(s, extra):
 
 def do_daily(s, extra):
     now = datetime.datetime.now()
-    if now.hour in (0, 23) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
+    if now.hour in range(0, 24) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
         print("do daily")
         extra["daily"] = now.strftime("%Y-%m-%d")
         # 10 times battle
@@ -204,20 +204,23 @@ def do_daily(s, extra):
         # dingshang reward
         s.sendall(b"\x00\x00\x00\x07\x00\x07\x00\x00\x00\x00\x18")
         # buy vip
-        # get mail rewrd when friday
+        print(extra)
         if extra["bind_gold"] > 60:
             buy_times = min(6, int(extra["bind_gold"]/60))
             s.sendall(b"\x00\00\x00\x0c\x00\x10\x00\x00\x00\x00\xb2\x0c" + buy_times.to_bytes(4, byteorder="little"))
             read_all(s)
             s.sendall(b"\x00\x00\x00\x0d\x00\x11\x00\x00\x00\x01\x10\x14\x00" + buy_times.to_bytes(4, byteorder="little"))
+        # get mail rewrd when friday
         if now.weekday() == 4:
             s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
             read_all(s)
         return True
     return False
 
+
 def heart_beat(s):
     s.sendall(b"\x00\x00\x00\x02\x01\x00")
+
 
 def do_guild(s, extra, server_id=20, need_join=True):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
