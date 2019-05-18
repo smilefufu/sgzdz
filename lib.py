@@ -472,21 +472,30 @@ def find_currency(data):
     flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00')
     if flag > 0:
         flag += 35
-    if flag not in range(30, 60):
-        flag = left_data.find(b"\x08\x00\x00")
-    if flag not in range(30, 60):
-        flag = left_data.find(b"\x07\x00\x00")
-    if flag not in range(30, 60):
-        flag = left_data.find(b"\x06\x00\x00")
-    if flag not in range(30, 60):
-        flag = left_data.find(b"\x05\x00\x00")
-    if flag in range(30,60):
-        print("find flag:", flag)
         offset = i + flag + 3
-        print(search_data[i:500])
     else:
-        print("cant find flag", search_data[i:500])
-        offset = i + 58
+        flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+        if flag > 0:
+            flag += 35
+            offset = i + flag + 2
+            print(offset, flag)
+            print(search_data[i:500])
+        else:
+            if flag not in range(30, 60):
+                flag = left_data.find(b"\x08\x00\x00")
+            if flag not in range(30, 60):
+                flag = left_data.find(b"\x07\x00\x00")
+            if flag not in range(30, 60):
+                flag = left_data.find(b"\x06\x00\x00")
+            if flag not in range(30, 60):
+                flag = left_data.find(b"\x05\x00\x00")
+            if flag in range(30, 60):
+                print("find flag:", flag)
+                offset = i + flag + 3
+                print(search_data[i:500])
+            else:
+                print("cant find flag", search_data[i:500])
+                offset = i + 58
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
