@@ -415,7 +415,7 @@ class SGZDZ(object):
             conn.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
             conn.close()
             # connection error event here, maybe reconnect
-            print 'connection error, reconnect...'
+            print('connection error, reconnect...')
             self.connect()
 
     def read_all(self):
