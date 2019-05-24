@@ -22,10 +22,10 @@ if __name__ == "__main__":
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
     table_name = 'pigs_{}'.format(server_id)
-    c.execute("SELECT email FROM " + table_name + " WHERE email != ? and cards like ? ORDER BY RANDOM()", (collector_email, "%" + args.card_name + "%", ))
+    c.execute("SELECT email FROM " + table_name + " WHERE level >= 30 and email != ? and cards like ? ORDER BY RANDOM()", (collector_email, "%" + args.card_name + "%", ))
     accounts = c.fetchall()
     if not accounts:
-        c.execute("SELECT email FROM " + table_name + " WHERE email != ? ORDER BY RANDOM()", (collector_email, ))
+        c.execute("SELECT email FROM " + table_name + " WHERE level >=30 and email != ? ORDER BY RANDOM()", (collector_email, ))
         accounts = c.fetchall()
     for item in accounts:
         email = item[0]
@@ -52,7 +52,10 @@ if __name__ == "__main__":
                 time.sleep(1)
                 smasher.harvest(market_id)
                 count -= 1
+            else:
+                print(card_name, card_id, cd, "not collect.")
             if count == 0:
+                print("collected enough cards.")
                 smasher.close()
                 collector.close()
                 exit()

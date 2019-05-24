@@ -27,7 +27,7 @@ if __name__ == "__main__":
     c = conn.cursor()
     table_name = 'pigs_{}'.format(args.server_id)
 
-    MAX_ONLINE_COUNT = 8
+    MAX_ONLINE_COUNT = 15
 
     if args.op == "add":
         # sql connection
@@ -48,7 +48,7 @@ if __name__ == "__main__":
                 c.execute(sql)
                 rows = c.fetchall()
                 now = datetime.datetime.now()
-                if not rows and now.hour in (2, 3, 4, 5, 6, 12, 13, 15, 18, 19, 21, 22):
+                if not rows and now.hour in (0, 1, 2, 3, 4, 5, 6, 10, 12, 13, 15, 16, 18, 19, 21, 22):
                     sql = "SELECT email FROM {} WHERE email not like 'adorable%' ORDER BY last_login DESC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     sql = "SELECT email FROM {} ORDER BY last_login DESC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     log(sql)
