@@ -447,7 +447,8 @@ def find_cards(data, cd=False, color="gold"):
     return cards
 
 def find_currency(data):
-    sp = data.split(b"sysMail_addressor_system")
+    flag = b"sysMail_content_welcome" if data.rfind(b"sysMail_content_welcome") > data.rfind(b"sysMail_addressor_system") else b"sysMail_addressor_system"
+    sp = data.split(flag)
     if len(sp) == 1:
         print(data)
         print("bad data")
@@ -469,10 +470,32 @@ def find_currency(data):
             break
         i += 1 + slen
     left_data = search_data[i:1000]
-    flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00')
+    flags = [
+        b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
+        b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00',
+        b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    ]
+    offset = None
+    for f in flags:
+        pos = left_data.find(f)
+        if pos > 0:
+            offset = i + pos + len(f) + 9
+            print(f)
+            print(left_data[:500])
+            break
+    if offset is None:
+        print("No flag match!", left_data[:500])
+        offset = i + 58
+    """
+    flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00')
+    if flag > 0:
+        offset = flag + 45 + 9
+    else:
+        flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00')
     if flag > 0:
         flag += 35
         offset = i + flag + 3
+        print(search_data[i:500])
     else:
         flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
         if flag > 0:
@@ -496,6 +519,7 @@ def find_currency(data):
             else:
                 print("cant find flag", search_data[i:500])
                 offset = i + 58
+    """
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
