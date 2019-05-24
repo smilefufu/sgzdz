@@ -135,6 +135,9 @@ def read_one(s):
 
 def battle_episode(s, episode):
     s.sendall(make_battle_data(CARDS, episode))
+    read_all(s)
+    time.sleep(5)
+    heart_beat(s)
     s.sendall(make_data("first_battle_end"))
 
 def do_story(s, story):
@@ -224,10 +227,12 @@ def heart_beat(s):
 
 def do_guild(s, extra, server_id=20, need_join=True):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
-    if extra.get("guild") != now.strftime("%Y-%m-%d") and now.hour not in (12, 13, 20, 21, 22, 23):
+    if extra.get("guild") != now.strftime("%Y-%m-%d") and now.hour not in (12, 13, 20, 21, 22, 23) or True:
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
         # join
+        if server_id == 20 and random.randint(0,10) % 2 == 0:
+            server_id = 19
         instructure = GUILD_ID.get(server_id)
         if not instructure:
             return True
@@ -516,7 +521,7 @@ if __name__ == "__main__":
             chapter = time_section + 1
             section = 1
             if email in ('fufu1@meirishentie.com', ):
-                available = [(22, 7), (22, 4), (21, 10), (21, 7), (21, 4)]
+                available = [(25,10), (25, 7), (25, 4), (24, 10), (24, 7), (24, 4)]
                 chapter, section = available[int(datetime.datetime.now().hour / len(available))]
             print('start shao dang')
             for i in range(10):
