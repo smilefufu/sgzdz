@@ -521,7 +521,7 @@ if __name__ == "__main__":
             chapter = time_section + 1
             section = 1
             if email in ('fufu1@meirishentie.com', ):
-                available = [(25,10), (25, 7), (25, 4), (24, 10), (24, 7), (24, 4)]
+                available = [(27,10), (27, 7), (27, 4), (26, 10), (26, 7), (26, 4)]
                 chapter, section = available[int(datetime.datetime.now().hour / len(available))]
             print('start shao dang')
             for i in range(10):
