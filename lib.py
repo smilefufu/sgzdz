@@ -469,9 +469,10 @@ def find_currency(data):
             print("break at:", i)
             break
         i += 1 + slen
-    left_data = search_data[i:1000]
+    left_data = search_data[i:i+500]
     flags = [
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
+        b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     ]
@@ -484,42 +485,19 @@ def find_currency(data):
             print(left_data[:500])
             break
     if offset is None:
-        print("No flag match!", left_data[:500])
-        offset = i + 58
-    """
-    flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00')
-    if flag > 0:
-        offset = flag + 45 + 9
-    else:
-        flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00')
-    if flag > 0:
-        flag += 35
-        offset = i + flag + 3
-        print(search_data[i:500])
-    else:
-        flag = left_data.find(b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-        if flag > 0:
-            flag += 35
-            offset = i + flag + 2
-            print(offset, flag)
-            print(search_data[i:500])
-        else:
-            if flag not in range(30, 60):
-                flag = left_data.find(b"\x08\x00\x00")
-            if flag not in range(30, 60):
-                flag = left_data.find(b"\x07\x00\x00")
-            if flag not in range(30, 60):
-                flag = left_data.find(b"\x06\x00\x00")
-            if flag not in range(30, 60):
-                flag = left_data.find(b"\x05\x00\x00")
-            if flag in range(30, 60):
-                print("find flag:", flag)
-                offset = i + flag + 3
-                print(search_data[i:500])
-            else:
-                print("cant find flag", search_data[i:500])
+        pos = left_data.find(b"\x00\x00\x00\x01\x04\x00")
+        if pos >= 0 and left_data[pos+6] > 0:
+            slen = left_data[pos+6]
+            try:
+                string = left_data[pos+7:pos+7+slen].decode("utf8")
+                offset = i + pos + 7 + slen + 6 + 9
+                print(search_data[offset:offset+100])
+            except:
+                print("No flag match!", left_data[:400])
                 offset = i + 58
-    """
+        else:
+            print("No flag match!", left_data[:400])
+            offset = i + 58
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
