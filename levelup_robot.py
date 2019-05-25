@@ -227,7 +227,7 @@ def heart_beat(s):
 
 def do_guild(s, extra, server_id=20, need_join=True):
     now = datetime.datetime.now() - datetime.timedelta(hours=5)
-    if extra.get("guild") != now.strftime("%Y-%m-%d") and now.hour not in (12, 13, 20, 21, 22, 23) or True:
+    if extra.get("guild") != now.strftime("%Y-%m-%d") and now.hour not in (12, 13, 20, 21, 22, 23):
         extra["guild"] = now.strftime("%Y-%m-%d")
         print("do guild")
         # join
@@ -406,7 +406,7 @@ if __name__ == "__main__":
     server = SERVER_LIST[server_id]
     SERVERID, HOST, PORT = server
     # sql connection
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect("data.db", timeout=10)
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
     table_name = 'pigs_{}'.format(server_id)

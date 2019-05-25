@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument("--email", help="param for op")  # 可选参数
     args = parser.parse_args()
 
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect("data.db", timeout=10)
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
     table_name = 'pigs_{}'.format(args.server_id)
