@@ -447,34 +447,44 @@ def find_cards(data, cd=False, color="gold"):
     return cards
 
 def find_currency(data):
-    flag = b"sysMail_content_welcome" if data.rfind(b"sysMail_content_welcome") > data.rfind(b"sysMail_addressor_system") else b"sysMail_addressor_system"
+    # flag = b"sysMail_content_welcome" if data.rfind(b"sysMail_content_welcome") > data.rfind(b"sysMail_addressor_system") else b"sysMail_addressor_system"
+    flag= b"sysMail"
     sp = data.split(flag)
     if len(sp) == 1:
         print(data)
         print("bad data")
         return dict(coin=0, bind_gold=0, red_wine=0, tech_point=0, gold=0, purple_wine=0, gold_wine=0)
     search_data = sp[-1]
+    print(search_data[:500])
     i = 0
-    while i < len(search_data):
-        if search_data[i:i+1] in (b"\x00", b"@"):
-            i += 1
-            continue
-        slen = search_data[i]
-        if slen < 3:
-            break
-        try:
-            string = search_data[i+1:i+1+slen].decode("utf8")
-        except UnicodeDecodeError:
-            # print(search_data[i:700])
-            print("break at:", i)
-            break
-        i += 1 + slen
+    #while i < len(search_data):
+    #    if search_data[i:i+1] in b"abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    #        i += 1
+    #    else:
+    #        print("break alpha at:", i)
+    #        break
+    #while i < len(search_data):
+    #    if search_data[i:i+1] in b"\x00@":
+    #        print("in 00 or @",i)
+    #        i += 1
+    #        continue
+    #    slen = search_data[i]
+    #    if slen < 3:
+    #        break
+    #    try:
+    #        string = search_data[i+1:i+1+slen].decode("utf8")
+    #        print(string)
+    #    except UnicodeDecodeError:
+    #        # print(search_data[i:700])
+    #        print("break at:", i)
+    #        break
+    #    i += 1 + slen
     left_data = search_data[i:i+500]
     flags = [
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00',
-        b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ]
     offset = None
     for f in flags:
@@ -487,14 +497,22 @@ def find_currency(data):
     if offset is None:
         pos = left_data.find(b"\x00\x00\x00\x01\x04\x00")
         if pos >= 0 and left_data[pos+6] > 0:
-            slen = left_data[pos+6]
+            print("offsetis None, pos:", pos,  left_data[:500])
+            # first string
+            slen1 = left_data[pos+6]
             try:
-                string = left_data[pos+7:pos+7+slen].decode("utf8")
-                offset = i + pos + 7 + slen + 6 + 9
-                print(search_data[offset:offset+100])
+                string = left_data[pos+7:pos+7+slen1].decode("utf8")
+                pos = pos + 7 + slen1
+                # offset = i + pos + 7 + slen1 + 6 + 9
             except:
                 print("No flag match!", left_data[:400])
                 offset = i + 58
+            if left_data[pos] == 1:
+                # string2
+                slen2 = left_data[pos+1]
+                pos += slen2
+            offset = i + pos + 6 + 9
+
         else:
             print("No flag match!", left_data[:400])
             offset = i + 58
