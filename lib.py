@@ -443,6 +443,9 @@ def find_cards(data, cd=False, color="gold"):
             card_id = data[i-8:i]
             offset = 194 if color == "purple" else 213
             cd_time = int.from_bytes(data[i-8+offset:i-8+offset+4], byteorder="little") if cd else 0
+            if cd_time < int((datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%s")):
+                # 7 days ago is already cooldown.
+                cd_time = 0
             cards.append((card, card_id, cd_time))
     return cards
 
