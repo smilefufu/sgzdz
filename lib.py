@@ -441,6 +441,8 @@ def find_cards(data, cd=False, color="gold"):
             code = data[i:i+4]
             card = all_card_code[code]
             card_id = data[i-8:i]
+            if card_id[-3:] != b"\x00\x00\x00":   # bug
+                continue
             offset = 194 if color == "purple" else 213
             cd_time = int.from_bytes(data[i-8+offset:i-8+offset+4], byteorder="little") if cd else 0
             if cd_time < int((datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%s")):
