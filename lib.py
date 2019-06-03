@@ -490,7 +490,6 @@ def find_currency(data):
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
-        b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     ]
     offset = None
     for f in flags:
@@ -498,7 +497,7 @@ def find_currency(data):
         if pos > 0:
             offset = i + pos + len(f) + 9
             print(f)
-            # print(left_data[:500])
+            print(left_data[:1000])
             break
     if offset is None:
         pos = left_data.find(b"\x00\x00\x00\x01\x04\x00")
@@ -521,7 +520,9 @@ def find_currency(data):
 
         else:
             print("No flag match!", left_data[:400])
-            offset = i + 58
+            f = "《三國志大戰M》運營團隊".encode("utf8")
+            i = left_data.find(f)
+            offset = i + len(f) + 58
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
