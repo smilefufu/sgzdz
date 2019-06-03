@@ -423,6 +423,8 @@ if __name__ == "__main__":
         head, body = read_one(s)
         r = init_data(body)
         print('init:', r)
+        if r["level"] >= 30:
+            exit()
         read_all(s)
         heart_beat(s)
         read_one(s)
@@ -433,7 +435,7 @@ if __name__ == "__main__":
         for i in range(20):
             s.sendall(make_quick_battle_data(5, 1))
         read_all(s)
-        for i in range(CHICKEN):
+        for i in range(min(10, CHICKEN)):
             s.sendall(b"\x00\x00\x00\x0c\x00\x03\x00\x00\x00\x00\x9f\x01\x01\x00\x00\x00")
             read_all(s)
             chapter = 4

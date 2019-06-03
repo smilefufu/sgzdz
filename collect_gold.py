@@ -31,7 +31,7 @@ if __name__ == "__main__":
         conn.isolation_level = None   # auto commit
         c = conn.cursor()
         table_name = 'pigs_{}'.format(server_id)
-        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 50000", ("%"+prefix+"%", ))
+        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 15000", ("%"+prefix+"%", ))
         email_list = [row[0] for row in c.fetchall()]
     for email in email_list:
         smasher = SGZDZ(email, server_id)
@@ -48,6 +48,9 @@ if __name__ == "__main__":
             if cd == 0:
                 print("using", card_name, card_id, "to collect", smasher._gold, end='')
                 price = collector.query_price(card_id)
+                if not price:
+                    collector.ensure_connection()
+                    continue
                 base_price = int(price/2)
                 max_price = price * 10
                 step = int(price/10)

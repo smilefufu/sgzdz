@@ -11,6 +11,8 @@ import datetime
 import argparse
 import sqlite3
 from functools import reduce
+import select
+import traceback
 
 import requests
 
@@ -387,7 +389,7 @@ class SGZDZ(object):
         head, body = self.read_one()
         self._info = init_data(body)
         self._gold = self._info["gold"]
-        self._purple_cards = self._info["purple_cards"]
+        self._purple_cards = [card for card in self._info["purple_cards"] if card[0] not in ("小乔", "张辽")]
         self._gold_cards = self._info["gold_cards"]
         self._market = self._info["market"]
         self._market_id_map = dict()  # key: market_id, value: card_id
@@ -404,6 +406,7 @@ class SGZDZ(object):
             table_name = 'pigs_{}'.format(self._server_id)
             c.execute("UPDATE " + table_name + " SET gold=? WHERE email=?", (self._gold, self._email))
         except:
+            print(traceback.format_exc())
             pass
 
     def ensure_connection(self):
@@ -505,11 +508,15 @@ class SGZDZ(object):
     def sell(self, amount, can_over=True):
         # can_over: can over the amount
         cards_can_sell = list()
+        value = 0
         for card_name, card_id, cd in self._gold_cards + self._purple_cards:
             if card_name in BAD_CARD or card_id[4:] != b"\x00\x00\x00\x00" or cd:
                 continue
             price = self.query_price(card_id)
             cards_can_sell.append((card_name, card_id, price))
+            value += price * 10
+            if value >= amount:
+                break
         # TODO: find the best way to form the price
         selling_cards = list()
         need_amount = amount

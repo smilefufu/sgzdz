@@ -31,10 +31,14 @@ if __name__ == "__main__":
         tpl = "{}{:0>"+str(pad)+"}@gmail.com"
         smash_email = tpl.format(prefix, n)
         smasher = SGZDZ(smash_email, server_id)
+        if smasher._info["level"] < 30:
+            print(smasher._info)
+            print("not level 30 yet", smasher._email)
+            continue
         print("================start punch===============")
         print("buyer:{} {}\tsmasher:{} {}".format(buyer._email, buyer._gold, smasher._email, smasher._gold))
         need_gold = 39121
-        if smasher._gold in range(0, 30000):
+        if smasher._gold > 0 and smasher._gold < 30000:
             need_gold = need_gold - smasher._gold
         trade_gold = int(need_gold / 0.95) + 1
         card_list = smasher.sell(trade_gold)

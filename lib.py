@@ -460,7 +460,7 @@ def find_currency(data):
         print("bad data")
         return dict(coin=0, bind_gold=0, red_wine=0, tech_point=0, gold=0, purple_wine=0, gold_wine=0)
     search_data = sp[-1]
-    print(search_data[:500])
+    # print(search_data[:500])
     i = 0
     #while i < len(search_data):
     #    if search_data[i:i+1] in b"abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ":
@@ -498,7 +498,7 @@ def find_currency(data):
         if pos > 0:
             offset = i + pos + len(f) + 9
             print(f)
-            print(left_data[:500])
+            # print(left_data[:500])
             break
     if offset is None:
         pos = left_data.find(b"\x00\x00\x00\x01\x04\x00")
