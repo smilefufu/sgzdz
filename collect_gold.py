@@ -20,7 +20,6 @@ if __name__ == "__main__":
     assert len(sp[0]) == len(sp[1])
     pad = len(sp[0])
     server_id = args.server_id
-    # collector = SGZDZ(None, server_id, token="aa7a3c0ed85e4ab79592415e1eef058a", user_id="44cf30b8-abae-41d5-bcbc-f3e22c2ef21d")
     collector = SGZDZ(collector_email, server_id)
     if sp[0] != '':
         rng = range(*[int(x) for x in sp])
@@ -34,12 +33,14 @@ if __name__ == "__main__":
         c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 15000", ("%"+prefix+"%", ))
         email_list = [row[0] for row in c.fetchall()]
     for email in email_list:
+        if email == collector_email:
+            continue
         smasher = SGZDZ(email, server_id)
         print("collecting email:", email, "with gold:", smasher._gold)
         if smasher._gold > 39000 or smasher._gold < 1000:
             # TODO
-            smasher.close()
             print("do next target....")
+            smasher.close()
             continue
         if not [card_name for card_name, card_id, cd in collector._purple_cards if cd == 0]:
             print("no purple card!!!")
@@ -47,6 +48,7 @@ if __name__ == "__main__":
         for card_name, card_id, cd in collector._purple_cards:
             if cd == 0:
                 print("using", card_name, card_id, "to collect", smasher._gold, end='')
+                collector.ensure_connection()
                 price = collector.query_price(card_id)
                 if not price:
                     collector.ensure_connection()
@@ -61,13 +63,14 @@ if __name__ == "__main__":
                     sell_price = base_price + step * times
                 print("at price:", sell_price)
                 market_id = collector.put_market(card_id, sell_price)
-                time.sleep(1)
+                # time.sleep(1)
                 smasher.buy(market_id)
-                time.sleep(1)
+                # time.sleep(1)
                 collector.harvest(market_id)
                 print("collector:", collector._gold, "smasher", smasher._email, smasher._gold)
                 print("collector purple cards:", len(collector._purple_cards))
                 smasher.close()
+                collector.ensure_connection()
                 break
         # if collector._info["role_id"] in (347101, ) and collector._gold > 400 and not all(cd>0 for card_name, card_id, cd in smasher._purple_cards):  # enough vip level to get purple first
         #     for card_name, card_id, cd in smasher._purple_cards:

@@ -484,7 +484,7 @@ def find_currency(data):
     #        print("break at:", i)
     #        break
     #    i += 1 + slen
-    left_data = search_data[i:i+500]
+    left_data = search_data[i:i+1000]
     flags = [
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
         b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\x00\x00\x00\x00\x00\x00\x00\x00',
@@ -497,7 +497,7 @@ def find_currency(data):
         if pos > 0:
             offset = i + pos + len(f) + 9
             print(f)
-            print(left_data[:1000])
+            # print(left_data[:1000])
             break
     if offset is None:
         pos = left_data.find(b"\x00\x00\x00\x01\x04\x00")
@@ -509,24 +509,27 @@ def find_currency(data):
                 string = left_data[pos+7:pos+7+slen1].decode("utf8")
                 pos = pos + 7 + slen1
                 # offset = i + pos + 7 + slen1 + 6 + 9
+                if left_data[pos] == 1:
+                    # string2
+                    slen2 = left_data[pos+1]
+                    pos += slen2
+                offset = i + pos + 6 + 9
             except:
-                print("No flag match!", left_data[:400])
-                offset = i + 58
-            if left_data[pos] == 1:
-                # string2
-                slen2 = left_data[pos+1]
-                pos += slen2
-            offset = i + pos + 6 + 9
+                print("No flag match!", left_data[:500])
+                f = "《三國志大戰M》運營團隊".encode("utf8")
+                i = left_data.find(f)
+                offset = i + len(f) + 58
 
         else:
-            print("No flag match!", left_data[:400])
+            print("No flag match!", left_data[:500])
             f = "《三國志大戰M》運營團隊".encode("utf8")
             i = left_data.find(f)
             offset = i + len(f) + 58
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")
-    if ret["gold"] > 10000000:
+    if ret["unknow1"] > 0:
+        print("unkown1 > 0!", ret)
         ret = dict(coin=0, bind_gold=0, red_wine=0, tech_point=0, gold=0, purple_wine=0, gold_wine=0)
     return ret
 
