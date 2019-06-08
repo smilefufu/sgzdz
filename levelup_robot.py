@@ -470,7 +470,7 @@ if __name__ == "__main__":
                 update_extra(table_name, email, extra, c)
             try:
                 if r["level"] >=19:
-                    need_join = False if email in ["fufu1@meirishentie.com", "augustus2019@gmail.com"] else True
+                    need_join = False if email in ["fufu1@meirishentie.com", "augustus2019@gmail.com", "1adorable000@gmail.com", "dragonball008@gmail.com"] else True
                     do_guild(s, extra, SERVERID, need_join)
                     update_extra(table_name, email, extra, c)
             except:
