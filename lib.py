@@ -522,7 +522,7 @@ def find_currency(data):
                     # 尝试用\xb0\x04\x00\x00定位
                     offset = i + left_data[i+len(f):i+len(f)+80].find(b"\xb0\x04\x00\x00") - 8
                 else:
-                    offsevt = i + len(f) + 58
+                    offset = i + len(f) + 58
 
         else:
             print("No flag match!", left_data[:500])
@@ -532,7 +532,7 @@ def find_currency(data):
                 # 尝试用\xb0\x04\x00\x00定位
                 offset = i + left_data[i+len(f):i+len(f)+80].find(b"\xb0\x04\x00\x00") - 8
             else:
-                offsevt = i + len(f) + 58
+                offset = i + len(f) + 58
     ret = dict()
     for idx, k in enumerate(["coin", "bind_gold", "red_wine", "tech_point", "unknow1", "unknow_2", "gold", "purple_wine", "gold_wine"]):
         ret[k] = int.from_bytes(search_data[offset+idx*4:offset+idx*4+4], byteorder="little")

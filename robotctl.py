@@ -45,14 +45,22 @@ if __name__ == "__main__":
                 sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) and email not like 'adorable%' ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                 sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                 log(sql)
-                c.execute(sql)
+                try:
+                    c.execute(sql)
+                except:
+                    print("sql error")
+                    continue
                 rows = c.fetchall()
                 now = datetime.datetime.now()
                 if not rows and now.hour in (0, 1, 2, 3, 4, 5, 6, 10, 12, 13, 15, 16, 18, 19, 21, 22):
                     sql = "SELECT email FROM {} WHERE email not like 'adorable%' ORDER BY last_login ASC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     sql = "SELECT email FROM {} WHERE datetime(last_login) < datetime('now', '-10 minute', 'localtime') ORDER BY last_login ASC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     log(sql)
-                    c.execute(sql)
+                    try:
+                        c.execute(sql)
+                    except:
+                        print("sql error")
+                        continue
                     rows = c.fetchall()
                 if not rows:
                     time.sleep(10)
