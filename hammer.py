@@ -353,7 +353,7 @@ def seven_day(s, extra):
 
 class SGZDZ(object):
 
-    def __init__(self, email, server_id, version="1.7.61848", token=None, user_id=None):
+    def __init__(self, email, server_id, version="1.8.63586", token=None, user_id=None):
         self._email = email
         self._server_id = server_id
         self._device_id = make_imei()
