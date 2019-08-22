@@ -396,4 +396,5 @@ if __name__ == "__main__":
             role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
             print('created role:', role_id, name)
         read_all(s)
+        s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
         c.execute("INSERT INTO guards values (?, ?, ?, 0)", (email, name, role_id))

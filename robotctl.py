@@ -27,7 +27,7 @@ if __name__ == "__main__":
     c = conn.cursor()
     table_name = 'pigs_{}'.format(args.server_id)
 
-    MAX_ONLINE_COUNT = 15
+    MAX_ONLINE_COUNT = 8
 
     if args.op == "add":
         # sql connection

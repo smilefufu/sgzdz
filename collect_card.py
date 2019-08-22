@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 base_price = int(price/2)
                 if collector._gold < base_price:
                     print("NOT ENOUGH GOLD!!!")
-                    exit()
+                    # exit()
                 market_id = smasher.put_market(card_id, base_price)
                 time.sleep(1)
                 collector.buy(market_id)

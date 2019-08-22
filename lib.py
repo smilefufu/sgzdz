@@ -188,6 +188,8 @@ def create_role(s, role_name=None):
         retry += 1
         if ret[:4] == b'\x00\x00\x00\x06':
             print("name", n, "has been taken")
+            seed = None if retry < 5 else retry
+            role_name = gen_name(seed=seed, gender=random.randint(1,3))
             continue
         else:
             try:
