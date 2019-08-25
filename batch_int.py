@@ -12,6 +12,6 @@ if __name__ == "__main__":
     parser.add_argument("endIndex", help="param for op", type=int)
     args = parser.parse_args()
     assert "startIndex must less than endIndex!", args.startIndex < args.endIndex
-    for idx in range(args.startIndex, args.endIndex):
+    for idx in range(args.startIndex, args.endIndex+1):
         idx_tpl = '{:0>%s}' % args.padLength
         print(args.template.format(idx_tpl.format(idx)))

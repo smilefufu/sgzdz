@@ -14,7 +14,7 @@ from functools import reduce
 import requests
 
 from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, init_data, gen_name, make_login_server_data, make_quick_battle_data
-from const import EPISODES, SERVER_LIST, STACK_ABLES, GUILD_ID
+from const import EPISODES, SERVER_LIST, STACK_ABLES, GUILD_ID, version
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -382,7 +382,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     email = args.email
     server_id = args.server_id
-    version = '1.8.63586'
 
     server = SERVER_LIST[server_id]
     SERVERID, HOST, PORT = server

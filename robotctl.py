@@ -42,7 +42,7 @@ if __name__ == "__main__":
             cnt = count_robot(args.server_id)
             log("now robot:", cnt)
             if cnt < MAX_ONLINE_COUNT - 4:
-                sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) and email not like 'adorable%' ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
+                # sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) and email not like 'adorable%' ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                 sql = "SELECT email FROM {} WHERE (last_login is null or datetime(last_login) < datetime('now', '-360 minute', 'localtime')) ORDER BY level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                 log(sql)
                 try:
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                     continue
                 rows = c.fetchall()
                 now = datetime.datetime.now()
-                if not rows and now.hour in (0, 1, 2, 3, 4, 5, 6, 10, 12, 13, 15, 16, 18, 19, 21, 22):
+                if not rows: # and now.hour in (0, 1, 2, 3, 4, 5, 6, 10, 12, 13, 15, 16, 18, 19, 21, 22):
                     sql = "SELECT email FROM {} WHERE email not like 'adorable%' ORDER BY last_login ASC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     sql = "SELECT email FROM {} WHERE datetime(last_login) < datetime('now', '-10 minute', 'localtime') ORDER BY last_login ASC, level ASC LIMIT {}".format(table_name, MAX_ONLINE_COUNT - cnt)
                     log(sql)

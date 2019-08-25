@@ -14,7 +14,7 @@ from functools import reduce
 import requests
 
 from lib import login_verify, create_role, make_data, get_formation, body_test, make_battle_data, init_data, gen_name, make_login_server_data, make_quick_battle_data
-from const import EPISODES, SERVER_LIST, STACK_ABLES, GUILD_ID
+from const import EPISODES, SERVER_LIST, STACK_ABLES, GUILD_ID, version
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; U; Android 9.0.1; en-us;) AppleWebKit/533.1 (KHTML, like Gecko) Version/5.0 Mobile Safari/533.1"
@@ -208,13 +208,13 @@ def do_daily(s, extra):
         s.sendall(b"\x00\x00\x00\x07\x00\x07\x00\x00\x00\x00\x18")
         # buy vip
         #print(extra)
-        #if extra["bind_gold"] > 60:
-        #    buy_times = min(6, int(extra["bind_gold"]/60))
-        #    s.sendall(b"\x00\00\x00\x0c\x00\x10\x00\x00\x00\x00\xb2\x0c" + buy_times.to_bytes(4, byteorder="little"))
-        #    read_all(s)
-        #    s.sendall(b"\x00\x00\x00\x0d\x00\x11\x00\x00\x00\x01\x10\x14\x00" + buy_times.to_bytes(4, byteorder="little"))
+        if extra["bind_gold"] > 60:
+            buy_times = min(6, int(extra["bind_gold"]/60))
+            s.sendall(b"\x00\00\x00\x0c\x00\x10\x00\x00\x00\x00\xb2\x0c" + buy_times.to_bytes(4, byteorder="little"))
+            read_all(s)
+            s.sendall(b"\x00\x00\x00\x0d\x00\x11\x00\x00\x00\x01\x10\x14\x00" + buy_times.to_bytes(4, byteorder="little"))
         # get mail rewrd when friday
-        if now.weekday() == 4:
+        if now.weekday() in (4,5):
             s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
             read_all(s)
         return True
@@ -401,7 +401,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     email = args.email
     server_id = args.server_id
-    version = '1.8.63586'
 
     server = SERVER_LIST[server_id]
     SERVERID, HOST, PORT = server
@@ -471,8 +470,8 @@ if __name__ == "__main__":
             try:
                 if r["level"] >=19:
                     need_join = False if email in ["fufu1@meirishentie.com", "augustus2019@gmail.com", "1adorable000@gmail.com", "dragonball008@gmail.com", "2adorable000@gmail.com"] else True
-                    #do_guild(s, extra, SERVERID, need_join)
-                    #update_extra(table_name, email, extra, c)
+                    do_guild(s, extra, SERVERID, need_join)
+                    update_extra(table_name, email, extra, c)
             except:
                 # still mark as done when failed
                 update_extra(table_name, email, extra, c)
@@ -516,7 +515,6 @@ if __name__ == "__main__":
             read_all(s)
             if (r['level'] > 5 and battle_times >= 20) or battle_times >= 25:  # 100/5 = 20 maxed battle times, stamina empty
                 break
-        s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
         if battle_times < 20:  # need shaodang
             time_section = int(datetime.datetime.now().hour / 8)
             chapter = time_section + 1

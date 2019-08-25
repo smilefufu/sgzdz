@@ -30,14 +30,14 @@ if __name__ == "__main__":
         conn.isolation_level = None   # auto commit
         c = conn.cursor()
         table_name = 'pigs_{}'.format(server_id)
-        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 1000 and 15000", ("%"+prefix+"%", ))
+        c.execute("SELECT email FROM " + table_name + " WHERE email like ? and gold between 100 and 20000", ("%"+prefix+"%", ))
         email_list = [row[0] for row in c.fetchall()]
     for email in email_list:
         if email == collector_email:
             continue
         smasher = SGZDZ(email, server_id)
         print("collecting email:", email, "with gold:", smasher._gold)
-        if smasher._gold > 39000 or smasher._gold < 1000:
+        if smasher._gold > 39000 or smasher._gold < 100:
             # TODO
             print("do next target....")
             smasher.close()
