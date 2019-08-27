@@ -192,7 +192,7 @@ def eat_food(s, extra):
 
 def do_daily(s, extra):
     now = datetime.datetime.now()
-    if now.hour in range(0, 24) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
+    if now.hour in range(0, 4)+range(17,24) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
         print("do daily")
         extra["daily"] = now.strftime("%Y-%m-%d")
         # 10 times battle
@@ -214,7 +214,7 @@ def do_daily(s, extra):
             read_all(s)
             s.sendall(b"\x00\x00\x00\x0d\x00\x11\x00\x00\x00\x01\x10\x14\x00" + buy_times.to_bytes(4, byteorder="little"))
         # get mail rewrd when friday
-        if now.weekday() in (4,5):
+        if now.weekday() in (4,0,1):
             s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
             read_all(s)
         return True

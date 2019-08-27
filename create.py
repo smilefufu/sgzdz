@@ -394,6 +394,9 @@ if __name__ == "__main__":
             # need create role
             role_id, name = create_role(s, gen_name(gender=random.randint(1,3)))
             print('created role:', role_id, name)
+        else:
+            name = r["name"]
+            role_id = r["role_id"]
         read_all(s)
         s.sendall(b"\x00\x00\x00\x07\x00\x08\x00\x00\x00\x00\x69")
-        c.execute("INSERT INTO guards values (?, ?, ?, 0)", (email, name, role_id))
+        c.execute("INSERT INTO pigs_" + str(SERVERID) + " (email, role_id)  values (?, ?)", (email, role_id))
