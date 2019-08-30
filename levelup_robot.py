@@ -192,7 +192,7 @@ def eat_food(s, extra):
 
 def do_daily(s, extra):
     now = datetime.datetime.now()
-    if now.hour in range(0, 4)+range(17,24) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
+    if now.hour in list(range(0, 4))+list(range(17,24)) and extra.get("daily") != now.strftime("%Y-%m-%d"):  # for testing
         print("do daily")
         extra["daily"] = now.strftime("%Y-%m-%d")
         # 10 times battle
@@ -429,7 +429,8 @@ if __name__ == "__main__":
             token, user_id = login_account(email, device_id)
             session = login_verify(user_id, token, version=version, server_id=SERVERID)
     else:  # new account
-        token, user_id = create_account(email, device_id)
+        #token, user_id = create_account(email, device_id)
+        token, user_id = login_account(email, device_id)
         session = login_verify(user_id, token, version=version, server_id=SERVERID)
         extra["create_time"] = datetime.datetime.now().strftime("%Y-%m-%d")
     extra["token"] = token
@@ -515,6 +516,21 @@ if __name__ == "__main__":
             read_all(s)
             if (r['level'] > 5 and battle_times >= 20) or battle_times >= 25:  # 100/5 = 20 maxed battle times, stamina empty
                 break
+
+        # eat chicken
+        s.sendall(b"\x00\x00\x00\x0c\x00\x03\x00\x00\x00\x00\x9f\x01\x01\x00\x00\x00")
+        for i in range(20):
+            s.sendall(make_quick_battle_data(4, 1))
+        read_all(s)
+        for i in range(min(10, CHICKEN)):
+            s.sendall(b"\x00\x00\x00\x0c\x00\x03\x00\x00\x00\x00\x9f\x01\x01\x00\x00\x00")
+            read_all(s)
+            chapter = 4
+            section = i % 3 + 1
+            print('start shao dang')
+            for i in range(20):
+                s.sendall(make_quick_battle_data(chapter, section))
+
         if battle_times < 20:  # need shaodang
             time_section = int(datetime.datetime.now().hour / 8)
             chapter = time_section + 1

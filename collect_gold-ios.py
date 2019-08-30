@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
+import requests
 import time
 import math
 import argparse
@@ -20,7 +21,13 @@ if __name__ == "__main__":
     assert len(sp[0]) == len(sp[1])
     pad = len(sp[0])
     server_id = args.server_id
-    collector = SGZDZ(None, server_id, token="451b70b2939e49558775cc78f5053bd3", user_id="44cf30b8-abae-41d5-bcbc-f3e22c2ef21d")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
+    }
+    url = "http://haiwaitest.3333.cn:8008/sdk/user/user.do"
+    data = '{"gamekey":"76749c0621384a96b744ccb089567bcf","uName":"","IDCard":"","uid":"","version":"","answer":"","mobile":"","deviceModel":"iPhone","password":"","imei":"44cf30b8-abae-41d5-bcbc-f3e22c2ef21d","flag":"16","nickName":"","question":"","appKey":"76749c0621384a96b744ccb089567bcf","language":"TW","thirdType":0,"authCode":"","mail":""}'
+    r = requests.post(url, headers=headers, data=data).json()
+    collector = SGZDZ(None, server_id, token=r["token"], user_id="44cf30b8-abae-41d5-bcbc-f3e22c2ef21d")
     # collector = SGZDZ(collector_email, server_id)
     if sp[0] != '':
         rng = range(*[int(x) for x in sp])

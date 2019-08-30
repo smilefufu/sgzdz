@@ -385,6 +385,7 @@ if __name__ == "__main__":
     parser.add_argument("turns", help="turns of runing", type=int)
     args = parser.parse_args()
     turns = args.turns
+    email = None
     server_id = 20
 
     server = SERVER_LIST[server_id]

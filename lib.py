@@ -100,7 +100,7 @@ def login_verify(user_id, token, version='1.8.63586', proxy=None, server_id=20):
         r = requests.get(url, headers=headers, proxies=proxies, timeout=5).json()
     else:
         r = requests.get(url, headers=headers).json()
-    # print(r)
+    print(r)
     return r['session']
 
 def sqlite_init():

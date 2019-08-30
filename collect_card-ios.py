@@ -18,7 +18,8 @@ if __name__ == "__main__":
     server_id = args.server_id
     # 44cf30b8-abae-41d5-bcbc-f3e22c2ef21d
     collector = SGZDZ(None, server_id, token="b193a74c53764925a30f339f6754fe80", user_id="44cf30b8-abae-41d5-bcbc-f3e22c2ef21d")
-    # collector = SGZDZ(collector_email, server_id)
+    print(collector._info)
+.   # collector = SGZDZ(collector_email, server_id)
     conn = sqlite3.connect("data.db")
     conn.isolation_level = None   # auto commit
     c = conn.cursor()
